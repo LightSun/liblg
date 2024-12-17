@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(liblg)
-add_compile_options(-std=c11 -Wall -Werror)
+project(liblg LANGUAGES C CXX)
+add_compile_options(-Wall -Werror)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
 
 file(GLOB_RECURSE src src/lg/*.c)
 
@@ -13,7 +14,7 @@ add_executable(fibrec ${src} src/fibrec.c)
 target_compile_options(fibrec PUBLIC -O2 -g)
 target_include_directories(fibrec PUBLIC src/)
 
-add_executable(lgasm ${src} src/lgasm.c)
+add_executable(lgasm ${src} src/lgasm.cpp)
 target_compile_options(lgasm PUBLIC -O2 -g)
 target_include_directories(lgasm PUBLIC src/)
 

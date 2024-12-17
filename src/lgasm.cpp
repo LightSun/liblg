@@ -1,13 +1,34 @@
 #include <stdio.h>
 #include <string.h>
 
+extern "C" {
 #include "lg/asm.h"
 #include "lg/init.h"
 #include "lg/stack.h"
 #include "lg/timer.h"
 #include "lg/vm.h"
+}
 
-int main(int argc, char *argv[]) {
+#include <vector>
+#include <string>
+
+using String = std::string;
+
+//./lgasm --bench 100 fibtail.lga
+int main(int argc, const char *argv[]) {
+    if(argc == 1){
+        String dir = "/media/heaven7/Elements_SE/study/mine/liblg/bench";
+        std::vector<String> args = {
+            "lgasm",
+            "--bench", "100",
+            dir + "/fibtail.lga"
+        };
+        const char* argvs[args.size()];
+        for(int i = 0 ; i < (int)args.size() ; i ++){
+            argvs[i] = args[i].c_str();
+        }
+        return main(args.size(), argvs);
+    }
   lg_init();
   struct lg_vm vm;
   lg_vm_init(&vm);
@@ -40,7 +61,7 @@ int main(int argc, char *argv[]) {
     struct lg_timer t;
     lg_timer_init(&t);
     
-    for (int i = 0; i < bench; i++) {
+    for (int i = 0; i < (int)bench; i++) {
       lg_exec(&vm, &stack, 0);
     }
 
