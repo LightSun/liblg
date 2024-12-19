@@ -86,7 +86,7 @@ struct lg_val *lg_clone(struct lg_vm *vm, struct lg_stack *stack, struct lg_val 
 
   if (src.type->clone_imp) {
     dst->type = src.type;
-    src.type->clone_imp(vm, *dst, src);
+    src.type->clone_imp(vm, src, dst);
   } else {
     *dst = src;
   }
@@ -99,7 +99,7 @@ struct lg_val *lg_cp(struct lg_vm *vm, struct lg_stack *stack, struct lg_val src
 
   if (src.type->cp_imp) {
     dst->type = src.type;
-    src.type->cp_imp(vm, *dst, src);
+    src.type->cp_imp(vm, src, dst);
   } else {
     *dst = src;
   }

@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(liblg LANGUAGES C CXX)
 add_compile_options(-Wall -Werror)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -std=c11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 file(GLOB_RECURSE src src/lg/*.c)
 

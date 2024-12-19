@@ -68,22 +68,30 @@ void lg_exec(struct lg_vm *vm, struct lg_stack *stack, size_t start_pc) {
     LG_DISPATCH(); 
   }
   ble: {
-    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
-      vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
-    }
+      //默认直接使用结构体的匿名成员做减法(_val - op->as_ble.i)。
+      struct lg_val* _val = lg_peek(stack);
+      if ((_val - op->as_ble.i)->as_int < op->as_ble.cond) {
+        vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
+      }
+//    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
+//      vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
+//    }
     
     LG_DISPATCH(); 
   }
  call: {
+      //as_call.pc: the entry of func
     lg_call(vm, lg_vec_get(&vm->ops, op->as_call.pc));
     LG_DISPATCH();
   }
  cp: {
-    lg_cp(vm, stack, *(lg_peek(stack) - op->as_cp.i));
+    struct lg_val* _val = lg_peek(stack);
+    lg_cp(vm, stack, *(_val - op->as_cp.i));
     LG_DISPATCH();
   }
  dec: {
-    (lg_peek(stack) - op->as_dec.i)->as_int--;
+    struct lg_val* _val = lg_peek(stack);
+    (_val - op->as_dec.i)->as_int--;
     LG_DISPATCH();
   }
  drop: {

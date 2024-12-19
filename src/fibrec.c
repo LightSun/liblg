@@ -9,6 +9,13 @@
 #include "lg/val.h"
 #include "lg/vm.h"
 
+/* //like py
+def fib(n):
+    if n < 2:
+        return n
+
+    return fib(n-1) + fib(n-2)
+*/
 static void fib(struct lg_vm *vm, struct lg_stack *stack) {  
   struct lg_pos pos;
   lg_pos_init(&pos, -1, -1);
@@ -22,11 +29,12 @@ static void fib(struct lg_vm *vm, struct lg_stack *stack) {
   lg_emit(vm, pos, LG_DEC);
   lg_emit(vm, pos, LG_CALL)->as_call.pc = fib_pc;
   lg_emit(vm, pos, LG_ADD);
-
+  //jump out func: fib.
   struct lg_op *op = lg_vec_get(&vm->ops, fib_pc);
   op->as_ble.pc = vm->ops.len;  
   lg_emit(vm, pos, LG_RET);
   
+  //fib(20)
   size_t start_pc = vm->ops.len;
   lg_val_init(&lg_emit(vm, pos, LG_PUSH)->as_push.val, &lg_int_type)->as_int = 20;
   lg_emit(vm, pos, LG_CALL)->as_call.pc = fib_pc;
@@ -50,7 +58,9 @@ int main() {
   vm.debug = true;
   struct lg_stack stack;
   lg_stack_init(&stack);
+  //
   fib(&vm, &stack);
+  //
   lg_stack_deinit(&stack);
   lg_vm_deinit(&vm);
   lg_deinit();

@@ -8,16 +8,37 @@
 #include "lg/pos.h"
 #include "lg/val.h"
 
-enum lg_opcode {LG_NOP = 0,
-		LG_ADD,
-		LG_BEQ, LG_BGR, LG_BLE,
-		LG_CALL, LG_CP,
-		LG_DEC, LG_DROP,
-		LG_JMP,
-		LG_PUSH,
-		LG_RET,
-		LG_STOP, LG_SWAP,
-                LG_OP_MAX};
+enum lg_opcode {
+    LG_NOP = 0,
+
+    LG_ADD,
+    LG_BEQ, //Branch to $label if the stack value at $offset is equal to $value.
+
+    LG_BGR, //Branch to $label if the stack value at $offset is greater than $value.
+
+    LG_BLE, //Branch to $label if the stack value at $offset is less than $value.
+
+    LG_CALL, //Push the program counter on the call stack and jump to $label.
+
+    LG_CP,  //Push a copy of the value at stack $offset.
+
+    LG_DEC, //Decrease the value at stack $offset by one.
+
+    //从栈上，指定位置移除一定个数.
+    LG_DROP, //Drop $count items from stack $offset.
+
+    LG_JMP,  //Jump to $label.
+
+    LG_PUSH, //Push $value on the stack.
+
+    LG_RET,  //Return from the current call.
+
+    LG_STOP, //Stop execution.
+
+    LG_SWAP, //Swap the top two items on the stack.
+
+    LG_OP_MAX
+};
 
 struct lg_beq_op {
   int64_t cond;
