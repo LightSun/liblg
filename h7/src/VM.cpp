@@ -42,12 +42,12 @@ bool VM::add(VM* vm, Position pos, Value* x, Value* y){
                    y->typeStr());
       return false;
     }
-    return t->add_impl(vm, x, y);
+    return t->call(kFuncOp_add, vm, x, y);
 }
 Value* VM::copyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->copy_impl(this, src, dst)) {
+    if (src->type->call(kFuncOp_copy,this, src, dst)) {
         dst->type = src->type;
     } else {
         *dst = *src;
@@ -57,7 +57,7 @@ Value* VM::copyValue(Stack* stack, Value* src){
 Value* VM::deepCopyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->deep_copy_impl(this, src, dst)) {
+    if (src->type->call(kFuncOp_deepCopy, this, src, dst)) {
         dst->type = src->type;
     } else {
         *dst = *src;

@@ -19,7 +19,6 @@ struct Value {
         int as_int;
         void *as_ptr;
     };
-
     void init(Type *type){
         this->type = type;
     }
