@@ -19,14 +19,22 @@ struct IntType : public Type{
             v1->as_int *= v2->as_int;
         });
         regFunc(kFuncOp_divide, [](TypeContext *, Value* v1, Value* v2){
-            v1->as_int /= v2->as_int;
+            if(v2->as_int != 0){
+                v1->as_int /= v2->as_int;
+            }else{
+                fprintf(stderr, "error divide-zero.\n");
+            }
         });
-//        regFunc(kFuncOp_mod, [](TypeContext *, Value* v1, Value* v2){
-//            v1->as_int %= v2->as_int;
-//        });
-//        regFunc(kFuncOp_mod, [](TypeContext *, Value* v1, Value* v2){
-//            v1->as_int %= v2->as_int;
-//        });
+        regFunc(kFuncOp_mod, [](TypeContext *, Value* v1, Value* v2){
+            if(v2->as_int != 0){
+                v1->as_int %= v2->as_int;
+            }else{
+                fprintf(stderr, "error mode-zero.\n");
+            }
+        });
+        regFunc(kFuncOp_copy, [](TypeContext *, Value* v1, Value* v2){
+           v1->as_int %= v2->as_int;
+        });
     }
 };
 }

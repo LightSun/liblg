@@ -2,7 +2,9 @@
 #include <string.h>
 #include "common/common.h"
 
-namespace h7 {
+namespace h7{
+using String = std::string;
+using CString = const std::string&;
     class StringRef{
     public:
         using u32 = unsigned int;

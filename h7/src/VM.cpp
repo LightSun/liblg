@@ -72,88 +72,87 @@ Value* VM::deepCopyValue(Stack* stack, Value* src){
 
 void VM::exec(Stack *stack, size_t start_pc){
     auto vm = this;
-  static const void* dispatch[] = {NULL,
-				   &&add,
-				   &&beq, &&bgr, &&ble,
-				   &&call, &&cp,
-				   &&dec, &&drop,
-				   &&jmp,
-				   &&push,
-				   &&ret,
-				   &&stop, &&swap};
-  
-  Operation *op = NULL;
-  vm->pc = (Operation*)lg_vec_get(&vm->ops, start_pc);
-  LG_DISPATCH();
-  
- add: {
-    auto y = stack->pop();
-    add(vm, op->pos, stack->peek(), y);
-    y->deinit();
-    LG_DISPATCH();
-  }
- beq: {
-    if ((stack->peek() - op->as_beq.i)->as_int == op->as_beq.cond) {
-      vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_beq.pc);
-    }
-    
-    LG_DISPATCH(); 
-  }
-  bgr: {
-    if ((stack->peek() - op->as_bgr.i)->as_int > op->as_bgr.cond) {
-      vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_bgr.pc);
-    }
-    
-    LG_DISPATCH(); 
-  }
-  ble: {
-      //默认直接使用结构体的匿名成员做减法(_val - op->as_ble.i)。
-      auto _val = stack->peek();
-      if ((_val - op->as_ble.i)->as_int < op->as_ble.cond) {
-        vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_ble.pc);
-      }
-//    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
-//      vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
-//    }
-    
-    LG_DISPATCH(); 
-  }
- call: {
-      //as_call.pc: the entry of func
-    call((Operation*)lg_vec_get(&vm->ops, op->as_call.pc));
-    LG_DISPATCH();
-  }
- cp: {
-    auto _val = stack->peek();
-    copyValue(stack, (_val - op->as_cp.i));
-    LG_DISPATCH();
-  }
- dec: {
-    auto _val = stack->peek();
-    (_val - op->as_dec.i)->as_int--;
-    LG_DISPATCH();
-  }
- drop: {
-      stack->drop(op->as_drop.i, op->as_drop.n);
-      LG_DISPATCH();
- }
- jmp: {
-    vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_jmp.pc);
-    LG_DISPATCH();
-  }
- push: {
-    deepCopyValue(stack, &op->as_push.val);
-    LG_DISPATCH();
-  }
- ret: {
-    auto c = (Call*)lg_vec_pop(&vm->calls);
-    vm->pc = c->ret_pc;
-    LG_DISPATCH();
-  }
- swap: {
-    stack->swap();
-    LG_DISPATCH();
-  }
+    static const void* dispatch[] = {NULL,
+                   &&add,
+                   &&beq, &&bgr, &&ble,
+                   &&call, &&cp,
+                   &&dec, &&drop,
+                   &&jmp,
+                   &&push,
+                   &&ret,
+                   &&stop, &&swap};
 
- stop: {}
+    Operation *op = NULL;
+    vm->pc = (Operation*)lg_vec_get(&vm->ops, start_pc);
+    LG_DISPATCH();
+
+    add: {
+        auto y = stack->pop();
+        add(vm, op->pos, stack->peek(), y);
+        y->deinit();
+        LG_DISPATCH();
+    }
+    beq: {
+        if ((stack->peek() - op->as_beq.i)->as_int == op->as_beq.cond) {
+          vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_beq.pc);
+        }
+        LG_DISPATCH();
+    }
+    bgr: {
+        if ((stack->peek() - op->as_bgr.i)->as_int > op->as_bgr.cond) {
+          vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_bgr.pc);
+        }
+
+        LG_DISPATCH();
+    }
+    ble: {
+        //默认直接使用结构体的匿名成员做减法(_val - op->as_ble.i)。
+        auto _val = stack->peek();
+        if ((_val - op->as_ble.i)->as_int < op->as_ble.cond) {
+            vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_ble.pc);
+        }
+        //    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
+        //      vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
+        //    }
+
+        LG_DISPATCH();
+    }
+    call: {
+        //as_call.pc: the entry of func
+        call((Operation*)lg_vec_get(&vm->ops, op->as_call.pc));
+        LG_DISPATCH();
+    }
+    cp: {
+        auto _val = stack->peek();
+        copyValue(stack, (_val - op->as_cp.i));
+        LG_DISPATCH();
+    }
+    dec: {
+        auto _val = stack->peek();
+        (_val - op->as_dec.i)->as_int--;
+        LG_DISPATCH();
+    }
+    drop: {
+       stack->drop(op->as_drop.i, op->as_drop.n);
+       LG_DISPATCH();
+    }
+    jmp: {
+        vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_jmp.pc);
+        LG_DISPATCH();
+    }
+    push: {
+        deepCopyValue(stack, &op->as_push.val);
+        LG_DISPATCH();
+    }
+    ret: {
+        auto c = (Call*)lg_vec_pop(&vm->calls);
+        vm->pc = c->ret_pc;
+        LG_DISPATCH();
+    }
+    swap: {
+        stack->swap();
+        LG_DISPATCH();
+    }
+
+    stop: {}
 }
