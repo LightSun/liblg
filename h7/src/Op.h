@@ -9,8 +9,9 @@
 namespace h7l {
 
 struct VM;
+struct Stack;
 
-struct h7l_Pos {
+struct Position {
   int row, col;
 };
 
@@ -46,73 +47,65 @@ enum Opcode {
     LG_OP_MAX
 };
 
-struct h7l_beq_op {
+struct beq_op {
   int64_t cond;
   size_t i, pc;
 };
 
-struct h7l_bgr_op {
+struct bgr_op {
   int64_t cond;
   size_t i, pc;
 };
 
-struct h7l_ble_op {
+struct ble_op {
   int64_t cond;
   size_t i, pc;
 };
 
-struct h7l_call_op {
+struct call_op {
   size_t pc;
 };
 
-struct h7l_cp_op {
+struct cp_op {
   size_t i;
 };
 
-struct h7l_dec_op {
+struct dec_op {
   size_t i;
 };
 
-struct h7l_drop_op {
+struct drop_op {
   size_t i, n;
 };
 
-struct h7l_jmp_op {
+struct jmp_op {
   size_t pc;
 };
 
-struct h7l_push_op {
+struct push_op {
    Value val;
 };
 
-struct h7l_op {
-    h7l_Pos pos;
+struct Operation {
+    Position pos;
     enum Opcode code;
 
     union {
-     h7l_beq_op as_beq;
-     h7l_bgr_op as_bgr;
-     h7l_ble_op as_ble;
-     h7l_call_op as_call;
-     h7l_cp_op as_cp;
-     h7l_dec_op as_dec;
-     h7l_drop_op as_drop;
-     h7l_jmp_op as_jmp;
-     h7l_push_op as_push;
+     beq_op as_beq;
+     bgr_op as_bgr;
+     ble_op as_ble;
+     call_op as_call;
+     cp_op as_cp;
+     dec_op as_dec;
+     drop_op as_drop;
+     jmp_op as_jmp;
+     push_op as_push;
     };
 
-    void init(h7l_Pos pos, enum Opcode code);
-    bool add(VM* vm, h7l_Pos pos, Value* v1, Value* v2);
-    void call(VM* vm);
-    //void call(VM* vm);
+    ~Operation();
+
+    void init(Position pos, enum Opcode code);
+    void deinit();
 };
-
-//struct lg_op *lg_op_init(struct lg_op *_, struct lg_pos pos, enum lg_opcode code);
-//void lg_op_deinit(struct lg_op *_);
-
-//bool lg_add(struct lg_vm *vm, struct lg_pos pos, struct lg_val *x, struct lg_val y);
-//void lg_call(struct lg_vm *vm, struct lg_op *pc);
-//struct lg_val *lg_clone(struct lg_vm *vm, struct lg_stack *stack, struct lg_val src);
-//struct lg_val *lg_cp(struct lg_vm *vm, struct lg_stack *stack, struct lg_val src);
 
 }

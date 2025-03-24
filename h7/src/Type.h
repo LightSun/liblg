@@ -10,14 +10,14 @@ struct VM;
 struct Type{
   String id;
 
-  virtual void add_imp(VM *vm, Value *inOut, Value* in2) = 0;
+  virtual bool add_impl(VM *vm, Value *inOut, Value* in2) = 0;
 
-  virtual void clone_imp(VM *vm, Value* src, Value* dst) = 0;
+  virtual bool copy_impl(VM *vm, Value* src, Value* dst) = 0;
 
-  virtual void cp_imp(VM *vm, Value* src, Value* dst) = 0;
+  virtual bool deep_copy_impl(VM *vm, Value* src, Value* dst) = 0;
 
-  virtual void deinit_imp(Value *v) = 0;
+  virtual bool deinit_impl(Value *v) = 0;
 
-  virtual void sub_imp(VM *vm, Value *inOut, Value* in2) = 0;
+  virtual bool sub_impl(VM *vm, Value *inOut, Value* in2) = 0;
 };
 }

@@ -82,3 +82,19 @@ do{\
         }                                                                   \
     } while (0)
 #endif
+
+#ifndef MED_ASSERT_F
+#define MED_ASSERT_F(condition, fmt ,...)                                                   \
+    do                                                                      \
+    {                                                                       \
+        if (!(condition))                                                   \
+        {      \
+            char buf[512];\
+            snprintf(buf, 512, fmt, ##__VA_ARGS__);\
+            std::cout << "Assertion failure: " << __FILE__ << "::" << __FUNCTION__  \
+                                     << __LINE__ \
+                                     << "\n" << buf << " >> " << #condition << std::endl;  \
+            abort();                                                        \
+        }                                                                   \
+    } while (0)
+#endif
