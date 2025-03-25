@@ -34,12 +34,12 @@ void VM::call(Operation* pc){
     call->init(pc, this->pc);
     this->pc = pc;
 }
-bool VM::add(VM* vm, Position pos, Value* x, Value* y){
-    auto *t = x->type;
+bool VM::add(VM* vm, Position pos, Value* inOut, Value* p1){
+    auto *t = inOut->type;
 
-    if (y->type != t) {
-      MED_ASSERT_F(false, "Expected type %s, actual %s", x->typeStr(),
-                   y->typeStr());
+    if (p1->type != t) {
+      MED_ASSERT_F(false, "Expected type %s, actual %s", inOut->typeStr(),
+                   p1->typeStr());
       return false;
     }
     return t->call(kFuncOp_add, vm, x, y);
@@ -47,7 +47,7 @@ bool VM::add(VM* vm, Position pos, Value* x, Value* y){
 Value* VM::copyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->call(kFuncOp_copy,this, src, dst)) {
+    if (src->type->call(kFuncOp_copy,this, dst, src)) {
         dst->type = src->type;
     } else {
         *dst = *src;
@@ -57,7 +57,7 @@ Value* VM::copyValue(Stack* stack, Value* src){
 Value* VM::deepCopyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->call(kFuncOp_deepCopy, this, src, dst)) {
+    if (src->type->call(kFuncOp_deepCopy, this, dst, src)) {
         dst->type = src->type;
     } else {
         *dst = *src;

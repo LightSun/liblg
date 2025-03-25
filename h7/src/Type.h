@@ -26,6 +26,7 @@ enum FuncOp{
 
 struct Type{
     String id;
+    unsigned int size {0};
 
     void regFunc(int op, std::function<void(TypeContext *, Value*, Value*)> func){
         funcMap[op] = func;
@@ -58,6 +59,7 @@ struct Type{
     }
 
 private:
+    //dst, src
     std::map<int, std::function<void(TypeContext*, Value*, Value*)>> funcMap;
     std::map<std::string, std::function<void(TypeContext*, Value*, Value*)>> selfFuncMap;
 };

@@ -12,11 +12,11 @@ struct Value {
 
     union {
         int64_t as_long;
-        float as_float;
-        double as_double;
         char as_char;
         short as_short;
         int as_int;
+        float as_float;
+        double as_double;
         void *as_ptr;
     };
     void init(Type *type){
