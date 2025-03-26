@@ -6,14 +6,16 @@
 #include "src/Stack.h"
 #include "src/Value.h"
 #include "src/VM.h"
+#include "src/lang/GlobalContext.h"
 
 using namespace h7l;
 
-VM::VM(){
-  lg_vec_init(&ops, sizeof(struct Operation));
-  lg_vec_init(&calls, sizeof(struct Call));
-  pc = NULL;
-  debug = false;
+VM::VM(GlobalContext* gc){
+    gCtx = gc;
+    lg_vec_init(&ops, sizeof(struct Operation));
+    lg_vec_init(&calls, sizeof(struct Call));
+    pc = NULL;
+    debug = false;
 }
 VM::~VM(){
 //    LG_VEC_DO(&vm->ops, struct lg_op *, op) {
@@ -23,7 +25,7 @@ VM::~VM(){
     lg_vec_deinit(&calls);
 }
 
-Operation *VM::emit(Position pos, enum Opcode code){
+Operation *VM::emit0(Position pos, enum Opcode code){
     auto kop = (Operation*)lg_vec_push(&ops);
     kop->init(pos, code);
     return kop;
@@ -42,7 +44,7 @@ bool VM::add(VM* vm, Position pos, Value* inOut, Value* p1){
                    p1->typeStr());
       return false;
     }
-    return t->call(kFuncOp_add, vm, x, y);
+    return t->call(kFuncOp_add, vm, inOut, p1);
 }
 Value* VM::copyValue(Stack* stack, Value* src){
     auto dst = stack->push();

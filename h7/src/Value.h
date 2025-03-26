@@ -13,8 +13,10 @@ struct Value {
     union {
         int64_t as_long;
         char as_char;
+        unsigned char as_uchar;
         short as_short;
         int as_int;
+        unsigned int as_uint;
         float as_float;
         double as_double;
         void *as_ptr;

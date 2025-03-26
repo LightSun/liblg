@@ -8,7 +8,6 @@ namespace h7l {
 struct IntType : public Type{
 
     IntType(){
-        size = sizeof(int);
         id = "int";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_int += v2->as_int;
@@ -45,7 +44,6 @@ struct IntType : public Type{
 struct LongType : public Type{
 
     LongType(){
-        size = sizeof(int64_t);
         id = "long";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_long += v2->as_long;
@@ -82,7 +80,6 @@ struct LongType : public Type{
 struct CharType : public Type{
 
     CharType(){
-        size = sizeof(char);
         id = "char";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_char += v2->as_char;
@@ -119,7 +116,6 @@ struct CharType : public Type{
 struct ShortType : public Type{
 
     ShortType(){
-        size = sizeof(short);
         id = "short";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_short += v2->as_short;

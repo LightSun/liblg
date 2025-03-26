@@ -8,7 +8,6 @@ namespace h7l {
 struct FloatType : public Type{
 
     FloatType(){
-        size = sizeof(float);
         id = "float";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_float += v2->as_float;
@@ -38,7 +37,6 @@ struct FloatType : public Type{
 struct DoubleType : public Type{
 
     DoubleType(){
-        size = sizeof(double);
         id = "double";
         regFunc(kFuncOp_add, [](TypeContext *, Value* v1, Value* v2){
             v1->as_double += v2->as_double;

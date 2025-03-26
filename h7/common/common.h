@@ -22,6 +22,11 @@ extern "C" {
 namespace h7l {
 using CString = const std::string&;
 using String = std::string;
+template<typename T>
+using List = std::vector<T>;
+
+template<typename T>
+using CList = const std::vector<T>&;
 }
 #define HMIN(a, b) (a < b ? a : b)
 #define HMAX(a, b) (a > b ? a : b)

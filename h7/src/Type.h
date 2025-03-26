@@ -26,15 +26,14 @@ enum FuncOp{
 
 struct Type{
     String id;
-    unsigned int size {0};
 
     void regFunc(int op, std::function<void(TypeContext *, Value*, Value*)> func){
         funcMap[op] = func;
     }
-    void regSelfFunc(CString op, std::function<void(TypeContext *, Value*, Value*)> func){
+    void regSelfFunc(CString op, std::function<void(TypeContext *, Value*,
+                                                    CList<Value*>)> func){
         selfFuncMap[op] = func;
     }
-
     bool call(enum FuncOp op, VM *vm, Value* v1, Value* v2){
         auto it = funcMap.find(op);
         if(it != funcMap.end()){
@@ -46,13 +45,13 @@ struct Type{
         }
         return false;
     }
-    bool callSelf(CString op, VM *vm, Value* v1, Value* v2){
+    bool callSelf(CString op, VM *vm, Value* ret, CList<Value*> params){
         auto it = selfFuncMap.find(op);
         if(it != selfFuncMap.end()){
             TypeContext tc;
             tc.type = this;
             tc.vm = vm;
-            it->second(&tc, v1, v2);
+            it->second(&tc, ret, params);
             return true;
         }
         return false;
@@ -61,6 +60,6 @@ struct Type{
 private:
     //dst, src
     std::map<int, std::function<void(TypeContext*, Value*, Value*)>> funcMap;
-    std::map<std::string, std::function<void(TypeContext*, Value*, Value*)>> selfFuncMap;
+    std::map<std::string, std::function<void(TypeContext*, Value*, CList<Value*>)>> selfFuncMap;
 };
 }
