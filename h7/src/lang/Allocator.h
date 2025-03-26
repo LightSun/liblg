@@ -10,4 +10,8 @@ struct Allocator{
     void (*free)(void* addr);
 };
 
+
+// void setGlobalAllocator(Allocator aoc);
+// Allocator getGlobalAllocator();
+
 }
