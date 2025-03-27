@@ -4,43 +4,14 @@
 
 using namespace h7l;
 
-void ShareData::unref(Allocator* aoc){
-    if(h_atomic_add(&_ref, -1) == 1){
-        if(data){
-            aoc->free(data);
-            data = nullptr;
-        }
-    }
-}
-
-Object::Object(Scope* scope, Class* clsInfo, CList<int> shapes):
-    scope(scope),clsInfo(clsInfo){
+Object::Object(Scope* scope, Class* clsInfo, CList<int> shapes){
     MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
+    std::unique_ptr<ArrayDesc> desc;
     if(!shapes.empty()){
-        arrayDesc = std::make_unique<ArrayDesc>();
-        arrayDesc->setShape(clsInfo->structSize, shapes);
-        U32 actDataSize = arrayDesc->eleCount * clsInfo->structSize;
-        U32 alignSize;
-        if(clsInfo->isPrimiveType()){
-            alignSize = actDataSize;
-        }else{
-            alignSize = 8 - actDataSize % 8 + actDataSize;
-        }
-        ShareData* sd = scope->getAllocator()->alloc(sizeof(ShareData));
-        sd->data = scope->getAllocator()->alloc(alignSize);
-        sd->offset = 0;
-        sd->_ref = 1;
-        mb.data = sd;
-        mb.len = actDataSize;
-        mb.cap = alignSize;
-        addFlag(kObjectFlag_MB_SHARE);
-    }else{
-        size_t structSize = clsInfo->structSize;
-        mb.data = scope->getAllocator()->alloc(structSize);
-        mb.len = structSize;
-        mb.cap = structSize;
-        addFlag(kObjectFlag_MB_FREE);
+        desc = std::make_unique<ArrayDesc>(clsInfo->structSize);
+        desc->setShape(shapes);
     }
+    init0(scope, clsInfo, nullptr, std::move(desc));
 }
 
 Object::~Object(){
@@ -48,8 +19,8 @@ Object::~Object(){
 }
 void Object::unref(){
     if(h_atomic_add(&_ref, -1) == 1){
-        freeData();
-        scope->getAllocator()->free(this);
+        mb.freeData();
+        H7L_FREE(this);
     }
 }
 U32 Object::dataSize(){
@@ -58,34 +29,63 @@ U32 Object::dataSize(){
     }
     return clsInfo->structSize;
 }
-void Object::freeData(){
-    if(mb.data){
-        if(hasFlag(kObjectFlag_MB_FREE)){
-            gCtx->getAllocator().free(mb.data);
-        }else if(hasFlag(kObjectFlag_MB_SHARE)){
+Object* Object::subArray(int index){
+    Object* obj = nullptr;
+    if(isArray()){
+        U32 offset = 0;
+        auto newDesc = std::make_unique<ArrayDesc>(clsInfo->structSize);
+        if(arrayDesc->toSubArray(index, offset, *newDesc)){
+            //
+            U32 actDataSize = newDesc->eleCount * clsInfo->structSize;
+            U32 alignSize;
+            if(clsInfo->isPrimiveType()){
+                alignSize = actDataSize;
+            }else{
+                alignSize = 8 - actDataSize % 8 + actDataSize;
+            }
+            //
+            obj = (Object*)H7L_ALLOC(sizeof(Object));
+            obj->mb.reset();
             ShareData* sd = (ShareData*)mb.data;
-            sd->unref(gCtx);
+            sd->ref();
+            size_t newOffset = mb.offset + offset;
+            //
+            init0(scope, clsInfo, sd, std::move(newDesc));
+            obj->mb.offset = newOffset;
+            return obj;
+        }else{
+            fprintf(stderr, "index out of range.\n");
         }
-        mb.data = nullptr;
     }
+    return nullptr;
 }
-void Object::setStringAsData(CString buf){
-    if(hasFlag(kObjectFlag_MB_SHARE)){
-        freeData();
-    }
-    auto& alloc = scope->getAllocator();
-    int actLen = buf.length() + 1;
-    int mod = actLen % 8;
-    int cap = mod > 0 ? (actLen / 8 + 1) * 8 : actLen;
-    if(mb.data){
-        mb.data = alloc->realloc(mb.data, cap);
+//-----------------------
+void Object::init0(Scope* scope, Class* clsInfo, ShareData* sd, std::unique_ptr<ArrayDesc> desc){
+    MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
+    this->scope = scope;
+    this->clsInfo = clsInfo;
+    this->super = nullptr;
+    this->_ref = 1;
+    this->flags = 0;
+    if(desc){
+        arrayDesc = std::move(desc);
+        U32 actDataSize = arrayDesc->eleCount * clsInfo->structSize;
+        U32 alignSize;
+        if(clsInfo->isPrimiveType()){
+            alignSize = actDataSize;
+        }else{
+            alignSize = 8 - actDataSize % 8 + actDataSize;
+        }
+        if(sd == nullptr){
+            sd = ShareData::New(alignSize);
+        }
+        if(mb.data == nullptr){
+            mb.initWithShareData(sd, actDataSize, alignSize);
+        }
     }else{
-        mb.data = alloc->alloc(cap);
+        this->arrayDesc = nullptr;
+        mb.initWithStructSize(clsInfo->structSize);
     }
-    memcpy(mb.data, buf.data(), buf.length());
-    mb.data[buf.length()] = '\0';
-    mb.len = buf.length();
-    mb.cap = cap;
 }
 
 

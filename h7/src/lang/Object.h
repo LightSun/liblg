@@ -1,77 +1,74 @@
 #pragma once
 
-#include "utils/h_atomic.h"
-#include "common/common.h"
+#include "src/lang/MemoryBlock.h"
 
 namespace h7l {
-
-typedef unsigned int U32;
 
 struct Class;
 struct Allocator;
 class Scope;
 
-enum MemoryFlags{
-    kMemoryFlag_FREE    = 0x0001,
-    kMemoryFlag_SHARE   = 0x0002,
-    kMemoryFlag_NO_CARE = 0x0004,
-};
-
 enum ObjectFlags{
-    kObjectFlag_MB_FREE,
-    kObjectFlag_MB_SHARE,
-    kObjectFlag_MB_NO_CARE,
-};
-
-struct ShareData{
-   char* data {nullptr};
-   volatile int _ref {1};
-   U32 offset {0};  // can be used for array-nested
-
-   void ref(){
-       h_atomic_add(&_ref, 1);
-   }
-   //fetch_add
-   void unref(Allocator* aoc);
-};
-
-struct MemoryBlock{
-    char* data {nullptr};
-    U32 len;     //for string , exclude tail which is '\0'
-    U32 cap {0}; //after align
+   // kObjectFlag_MB_FREE,
 };
 
 struct ArrayDesc{
     List<int> shapes;
     List<int> strides;
+    U32 baseSize {0};
     U32 eleCount {0};
 
-    void setShape(U32 baseSize,CList<int> shapes){
-        this->shapes = shapes;
-        strides.resize(shapes.size());
-        const int size = shapes.size();
-        U32 eleSize = baseSize;
-        int eleC = 1;
-        for(int i = size - 1 ; i >= 0 ; --i){
-            strides[i] = eleSize;
-            eleSize *= shapes[i];
-            eleC *= shapes[i];
+    ArrayDesc(U32 s): baseSize(s){}
+
+    void setShape(CList<int> shapes){
+        if(!shapes.empty()){
+            this->shapes = shapes;
+            strides.resize(shapes.size());
+            const int size = shapes.size();
+            U32 eleSize = baseSize;
+            int eleC = 1;
+            for(int i = size - 1 ; i >= 0 ; --i){
+                strides[i] = eleSize;
+                eleSize *= shapes[i];
+                eleC *= shapes[i];
+            }
+            this->eleCount = eleC;
+        }else{
+            this->shapes.clear();
+            strides.clear();
+            eleCount = 0;
         }
-        this->eleCount = eleC;
+    }
+    bool toSubArray(int index, U32& offset, ArrayDesc& outArr){
+        if(shapes.empty() || shapes[0] < index){
+            return false;
+        }
+        int c = shapes[0];
+        if(index < 0){
+            index = c + index;
+        }
+        offset = index * strides[0];
+        List<int> newShapes;
+        for(size_t i = 1 ; i < shapes.size() ; ++i){
+            newShapes.push_back(shapes[i]);
+        }
+        outArr.setShape(newShapes);
+        return true;
     }
 };
 
 struct Object{
 
     MemoryBlock mb;
+    Scope* scope {nullptr};
     Class* clsInfo {nullptr};
     Object* super {nullptr};
-    Scope* scope {nullptr};
     volatile int _ref {1};
     U32 flags {0};
     std::unique_ptr<ArrayDesc> arrayDesc;
 
-    Object(Scope* scope, Class* clsInfo, CList<int> shapes);
+    Object(Scope* scope, Class* clsInfo, CList<int> shapes = {});
+    Object(Scope* scope, Class* clsInfo, std::unique_ptr<ArrayDesc> desc);
     Object(){}
     ~Object();
 
@@ -80,12 +77,18 @@ struct Object{
     }
     //fetch_add
     void unref();
-    bool hasFlag(int flag)const{ (flags & flag) == flag;}
-    void addFlag(int flag)const{ flags |= flag;}
+    bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
+    void addFlag(U32 flag){ flags |= flag;}
     U32 dataSize();
+    bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
+    //
+    void setStringAsData(CString buf){
+        mb.setStringAsData(buf);
+    }
+    Object* subArray(int index);
 
-    void freeData();
-    void setStringAsData(CString buf);
+private:
+    void init0(Scope* scope, Class* clsInfo, ShareData* sd, std::unique_ptr<ArrayDesc> desc);
 };
 
 }

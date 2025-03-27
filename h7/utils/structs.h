@@ -15,11 +15,25 @@ struct TypeInfo {
     size_t alignment;
 };
 
+struct MemberInfo0{
+    std::string baseType;
+    std::vector<int> shapes;
+
+    int getElementCount()const{
+        int cnt = 1;
+        for(auto& shape : shapes){
+            cnt *= shape;
+        }
+        return cnt;
+    }
+};
+
 struct MemberLayout {
     size_t offset;
     size_t size;
     size_t alignment;
     size_t padding_before;
+    std::vector<int> shapes;
 };
 
 struct StructLayout {
@@ -48,5 +62,8 @@ static void print_layout(const StructLayout& layout) {
 //extra func to parse type.
 StructLayout compute_struct_layout(const std::vector<std::string>& member_types,
                                    std::function<TypeInfo(const std::string&, int)> func);
+StructLayout compute_struct_layout2(const std::vector<MemberInfo0>& infos,
+                                   std::function<TypeInfo(const std::string&, int)> func);
+
 
 }

@@ -27,6 +27,10 @@ enum FuncOp{
 struct Type{
     String id;
 
+    Type(){}
+    Type(CString _id):id(_id){}
+    virtual ~Type(){}
+
     void regFunc(int op, std::function<void(TypeContext *, Value*, Value*)> func){
         funcMap[op] = func;
     }
@@ -56,6 +60,7 @@ struct Type{
         }
         return false;
     }
+    virtual bool isPrimetiveType(){return true;}
 
 private:
     //dst, src

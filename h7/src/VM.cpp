@@ -6,7 +6,6 @@
 #include "src/Stack.h"
 #include "src/Value.h"
 #include "src/VM.h"
-#include "src/lang/GlobalContext.h"
 
 using namespace h7l;
 

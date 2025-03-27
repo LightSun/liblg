@@ -27,6 +27,7 @@ using List = std::vector<T>;
 
 template<typename T>
 using CList = const std::vector<T>&;
+typedef unsigned int U32;
 }
 #define HMIN(a, b) (a < b ? a : b)
 #define HMAX(a, b) (a > b ? a : b)
