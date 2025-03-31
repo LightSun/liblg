@@ -8,8 +8,12 @@ using namespace h7l;
 Scope::~Scope(){
 
 }
-Object* Scope::newObject(CString objName, Class* base, CList<int> shapes){
-    auto it = m_objMap.emplace(objName, std::make_unique<Object>(this, base, shapes));
+Object* Scope::newObject(CString objName, Class* base){
+    return newArray(objName, base, {});
+}
+Object* Scope::newArray(CString objName,Class* base, CList<int> shapes){
+    auto it = m_objMap.emplace(objName, std::make_unique<Object>(
+                                            this, base, shapes));
     if(it.second){
         return it.first->second.get();
     }

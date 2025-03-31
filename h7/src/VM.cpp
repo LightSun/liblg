@@ -6,11 +6,12 @@
 #include "src/Stack.h"
 #include "src/Value.h"
 #include "src/VM.h"
+#include "src/lang/RuntimeContext.h"
 
 using namespace h7l;
 
-VM::VM(GlobalContext* gc){
-    gCtx = gc;
+VM::VM(Scope* scope){
+    scope_ = scope;
     lg_vec_init(&ops, sizeof(struct Operation));
     lg_vec_init(&calls, sizeof(struct Call));
     pc = NULL;
@@ -35,7 +36,7 @@ void VM::call(Operation* pc){
     call->init(pc, this->pc);
     this->pc = pc;
 }
-bool VM::add(VM* vm, Position pos, Value* inOut, Value* p1){
+bool VM::add(Position pos, Value* inOut, Value* p1){
     auto *t = inOut->type;
 
     if (p1->type != t) {
@@ -43,12 +44,14 @@ bool VM::add(VM* vm, Position pos, Value* inOut, Value* p1){
                    p1->typeStr());
       return false;
     }
-    return t->call(kFuncOp_add, vm, inOut, p1);
+    auto rc = RuntimeContext::ofVM(this, inOut->type);
+    return t->call(kFuncOp_add, rc.get(), inOut, p1);
 }
 Value* VM::copyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->call(kFuncOp_copy,this, dst, src)) {
+    auto rc = RuntimeContext::ofVM(this, src->type);
+    if (src->type->call(kFuncOp_copy, rc.get(), dst, src)) {
         dst->type = src->type;
     } else {
         *dst = *src;
@@ -58,7 +61,8 @@ Value* VM::copyValue(Stack* stack, Value* src){
 Value* VM::deepCopyValue(Stack* stack, Value* src){
     auto dst = stack->push();
 
-    if (src->type->call(kFuncOp_deepCopy, this, dst, src)) {
+    auto rc = RuntimeContext::ofVM(this, src->type);
+    if (src->type->call(kFuncOp_deepCopy, rc.get(), dst, src)) {
         dst->type = src->type;
     } else {
         *dst = *src;
@@ -89,7 +93,7 @@ void VM::exec(Stack *stack, size_t start_pc){
 
     add: {
         auto y = stack->pop();
-        add(vm, op->pos, stack->peek(), y);
+        add(op->pos, stack->peek(), y);
         y->deinit();
         LG_DISPATCH();
     }

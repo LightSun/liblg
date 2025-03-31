@@ -61,7 +61,7 @@ struct Object{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
-    Class* clsInfo {nullptr};
+    Class* clsInfo {nullptr}; //baseType
     Object* super {nullptr};
     volatile int _ref {1};
     U32 flags {0};
@@ -88,7 +88,8 @@ struct Object{
     Object* subArray(int index);
 
 private:
-    void init0(Scope* scope, Class* clsInfo, ShareData* sd, std::unique_ptr<ArrayDesc> desc);
+    void init0(Scope* scope, Class* clsInfo, ShareData* sd,
+               std::unique_ptr<ArrayDesc> desc);
 };
 
 }

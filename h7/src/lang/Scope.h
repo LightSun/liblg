@@ -14,6 +14,8 @@ public:
         :m_gc(gc),m_parent(parent){MED_ASSERT(gc);}
     ~Scope();
 
+    GlobalContext* getGlobalContext(){return m_gc;}
+
     void setName(CString name){
         m_name = name;
     }
@@ -22,11 +24,8 @@ public:
         m_children.push_back(std::make_unique<Scope>(m_gc, this));
         return m_children[size].get();
     }
-    Allocator* getAllocator(){
-        return &m_gc->getAllocator();
-    }
-
-    Object* newObject(CString objName,Class* base, CList<int> shapes = {});
+    Object* newObject(CString objName,Class* base);
+    Object* newArray(CString objName,Class* base, CList<int> shapes = {});
 
 private:
     String m_name;

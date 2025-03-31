@@ -1,6 +1,5 @@
 #include <memory.h>
-#include "MemoryBlock.h"
-#include "src/lang/Scope.h"
+#include "src/lang/MemoryBlock.h"
 
 using namespace h7l;
 

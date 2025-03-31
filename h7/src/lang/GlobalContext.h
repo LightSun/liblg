@@ -11,39 +11,39 @@ class GlobalContext
 {
 public:
     GlobalContext(){}
+    ~GlobalContext(){
+        auto it = m_typeMap.begin();
+        for(; it != m_typeMap.end(); ++it){
+            H7L_FREE(it->second);
+        }
+    }
 
-    void setAllocator(const Allocator& alloc){
-        m_allocator = alloc;
-    }
-    Allocator& getAllocator(){
-        return m_allocator;
-    }
     Type* getType(CString tname)const{
         auto it = m_typeMap.find(tname);
         if(it != m_typeMap.end()){
-            return it->second.get();
+            return it->second;
         }
         return nullptr;
     }
     Class* getClass(CString tname)const{
-        auto it = m_classMap.find(tname);
-        if(it != m_classMap.end()){
-            return it->second.get();
+        auto it = m_typeMap.find(tname);
+        if(it != m_typeMap.end()){
+            return dynamic_cast<Class*>(it->second);
         }
         return nullptr;
     }
-    void putType(std::unique_ptr<Type> type){
-        String name = type->id;
-        m_typeMap[name] = std::move(type);
+    void putType(Type* type){
+        m_typeMap[type->id] = std::move(type);
     }
-    void putClass(std::unique_ptr<Class> cls){
-        String name = cls->id;
-        m_classMap[name] = std::move(cls);
+    template<typename T>
+    Type* putRawType(){
+        auto crc = (T*)H7L_ALLOC(sizeof(T));
+        crc->init();
+        putType(crc);
+        return crc;
     }
 private:
-    Allocator m_allocator;
-    std::map<String, std::unique_ptr<Type>> m_typeMap;
-    std::map<String, std::unique_ptr<Class>> m_classMap;
+    std::map<String, Type*> m_typeMap;
 };
 
 }

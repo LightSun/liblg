@@ -10,7 +10,32 @@ struct Field{
     Type* type {nullptr};
     String name;
     std::unique_ptr<List<int>> shapes;
-    U32 offset;
+    U32 offset {0};
+
+    Field(){}
+    Field(const Field& f){
+        this->type = f.type;
+        this->name = f.name;
+        this->offset = f.offset;
+        if(!f.shapes->empty()){
+            this->shapes = std::make_unique<List<int>>();
+            *this->shapes = *f.shapes;
+        }else{
+            this->shapes = nullptr;
+        }
+    }
+    Field& operator=(const Field& f){
+        this->type = f.type;
+        this->name = f.name;
+        this->offset = f.offset;
+        if(!f.shapes->empty()){
+            this->shapes = std::make_unique<List<int>>();
+            *this->shapes = *f.shapes;
+        }else{
+            this->shapes = nullptr;
+        }
+        return *this;
+    }
 
     void setShapes(CList<int> s){
         if(!s.empty()){
@@ -36,6 +61,9 @@ struct Class: public Type{
     }
     Class(CString _id): Type(_id){}
 
+    bool isPrimetiveType() override{return false;}
+    String getName()const{return id;}
+
     void init(GlobalContext* gc, CList<MemberInfo> types, CList<String> names);
 
     void initArray(int dimCnt){
@@ -46,6 +74,16 @@ struct Class: public Type{
     }
     bool isPrimiveType()const{
         return id.find(".") == String::npos;
+    }
+    void copyTo(Class* dst){
+        Type::copyTo(dst);
+        dst->fields = this->fields;
+        dst->structSize = this->structSize;
+        dst->arrayDimCnt = this->arrayDimCnt;
+    }
+    void toArrayType(int dim, Class* outC){
+        copyTo(outC);
+        outC->arrayDimCnt = dim;
     }
 };
 

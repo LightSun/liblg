@@ -7,8 +7,6 @@
 
 namespace h7l {
 
-struct Allocator;
-
 enum MemoryFlags{
     kMemoryFlag_FREE    = 0x0001,
     kMemoryFlag_SHARE   = 0x0002,
