@@ -50,7 +50,7 @@ Object* Object::subArray(int index){
             sd->ref();
             size_t newOffset = mb.offset + offset;
             //
-            init0(scope, clsInfo, sd, std::move(newDesc));
+            obj->init0(scope, clsInfo, sd, std::move(newDesc));
             obj->mb.offset = newOffset;
             return obj;
         }else{
