@@ -10,7 +10,7 @@ namespace h7l {
 enum MemoryFlags{
     kMemoryFlag_FREE    = 0x0001,
     kMemoryFlag_SHARE   = 0x0002,
-    kMemoryFlag_NO_CARE = 0x0004,
+    //kMemoryFlag_NO_CARE = 0x0004,
 };
 
 struct ShareData{
@@ -49,11 +49,10 @@ struct MemoryBlock{
 
     ~MemoryBlock(){freeData();}
 
-    char* dataPtr(){
-        return (char*)data;
-    }
+    void* getDataPtr();
+
     String asString(){
-        return String(dataPtr(), len);
+        return String((char*)getDataPtr(), len);
     }
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}

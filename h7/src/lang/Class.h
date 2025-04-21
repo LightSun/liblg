@@ -1,10 +1,14 @@
 #pragma once
+
 #include "src/Type.h"
 
 namespace h7l {
 
 using U32 = unsigned int;
 class GlobalContext;
+
+struct Value;
+struct Object;
 
 struct Field{
     Type* type {nullptr};
@@ -36,7 +40,6 @@ struct Field{
         }
         return *this;
     }
-
     void setShapes(CList<int> s){
         if(!s.empty()){
             shapes = std::make_unique<List<int>>();
@@ -45,11 +48,16 @@ struct Field{
             shapes = nullptr;
         }
     }
+    void get(Object* obj, Value* out);
 };
 
 struct MemberInfo{
     Type* type {nullptr};
     List<int> shapes;
+
+    MemberInfo(){}
+    MemberInfo(Type* type, CList<int> shapes = {}):
+        type(type), shapes(shapes){}
 };
 
 struct Class: public Type{
@@ -63,6 +71,7 @@ struct Class: public Type{
 
     bool isPrimetiveType() override{return false;}
     String getName()const{return id;}
+    Field& getFieldAt(int idx){fields[idx];}
 
     void init(GlobalContext* gc, CList<MemberInfo> types, CList<String> names);
 

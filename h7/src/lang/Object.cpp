@@ -13,6 +13,10 @@ Object::Object(Scope* scope, Class* clsInfo, CList<int> shapes){
     }
     init0(scope, clsInfo, nullptr, std::move(desc));
 }
+Object::Object(Scope* scope, Class* clsInfo, std::unique_ptr<ArrayDesc> desc){
+    MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
+    init0(scope, clsInfo, nullptr, std::move(desc));
+}
 
 Object::~Object(){
     unref();

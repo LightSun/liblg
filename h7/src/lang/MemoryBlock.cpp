@@ -3,6 +3,16 @@
 
 using namespace h7l;
 
+void* MemoryBlock::getDataPtr(){
+    if(data){
+        if(hasFlag(kMemoryFlag_SHARE)){
+            ShareData* sd = (ShareData*)data;
+            return sd->data;
+        }
+        return data;
+    }
+    return nullptr;
+}
 void MemoryBlock::freeData(){
     if(data){
         if(hasFlag(kMemoryFlag_FREE)){

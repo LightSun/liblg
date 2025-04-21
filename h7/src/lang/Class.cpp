@@ -1,9 +1,15 @@
-#include "src/lang/Class.h"
 #include "src/Type.h"
+#include "src/lang/Class.h"
 #include "src/lang/GlobalContext.h"
+#include "src/lang/Object.h"
 #include "utils/structs.h"
 
 using namespace h7l;
+
+void Field::get(Object* obj, Value* out){
+    char* _ptr = (char*)obj->getDataPtr();
+    char* ptr = _ptr + offset;
+}
 
 void Class::init(GlobalContext* gc, CList<MemberInfo> types, CList<String> names){
     MED_ASSERT(types.size() == names.size());

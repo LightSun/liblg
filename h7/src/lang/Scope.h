@@ -24,15 +24,15 @@ public:
         m_children.push_back(std::make_unique<Scope>(m_gc, this));
         return m_children[size].get();
     }
-    Object* newObject(CString objName,Class* base);
-    Object* newArray(CString objName,Class* base, CList<int> shapes = {});
+    Object* newObject(Class* base);
+    Object* newArray(Class* base, CList<int> shapes = {});
 
 private:
     String m_name;
     GlobalContext* m_gc {nullptr};
     Scope* m_parent {nullptr};
     List<std::unique_ptr<Scope>> m_children;
-    std::map<String, std::unique_ptr<Object>> m_objMap;
+    List<std::unique_ptr<Object>> m_objs;
 };
 
 }

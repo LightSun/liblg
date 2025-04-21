@@ -11,7 +11,7 @@ class GlobalContext
 {
 public:
     using SPType = std::shared_ptr<Type>;
-    GlobalContext(){}
+    GlobalContext();
     ~GlobalContext(){
     }
     Type* getType(CString tname)const{
@@ -34,7 +34,7 @@ public:
     template<typename T>
     Type* putRawType(){
         auto crc = std::make_shared<T>();
-        crc->init();
+        //crc->init();
         putType(crc);
         return (Type*)crc.get();
     }

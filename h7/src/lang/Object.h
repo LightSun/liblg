@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/lang/MemoryBlock.h"
+#include "src/Value.h"
 
 namespace h7l {
 
@@ -57,7 +58,7 @@ struct ArrayDesc{
     }
 };
 
-struct Object{
+struct Object: public IObject{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
@@ -76,9 +77,10 @@ struct Object{
         h_atomic_add(&_ref, 1);
     }
     //fetch_add
-    void unref();
+    void unref() override;
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}
+    void* getDataPtr(){return mb.getDataPtr();}
     U32 dataSize();
     bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
     //

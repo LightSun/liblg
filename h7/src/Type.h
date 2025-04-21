@@ -3,6 +3,13 @@
 #include <map>
 #include "common/common.h"
 
+#define TYPE_ID_INT "int"
+#define TYPE_ID_CHAR "char"
+#define TYPE_ID_SHORT "short"
+#define TYPE_ID_LONG "long"
+#define TYPE_ID_FLOAT "float"
+#define TYPE_ID_DOUBLE "double"
+
 namespace h7l {
 
 struct Value;

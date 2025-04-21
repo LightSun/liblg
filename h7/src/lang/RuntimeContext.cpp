@@ -10,7 +10,7 @@ using namespace h7l;
 
 namespace h7l{
 struct Class_VM : public Class{
-    void init(){
+    Class_VM(){
         id = "h7l.VM";
         structSize = sizeof(VM);
         arrayDimCnt = 0;
@@ -19,8 +19,6 @@ struct Class_VM : public Class{
 
 struct Class_RuntimeContext : public Class{
     Class_RuntimeContext(){
-    }
-    void init(){
         id = "h7l.RuntimeContext";
         //reg methods?
         structSize = sizeof(RuntimeContext);

@@ -7,9 +7,13 @@
 
 namespace h7l {
 
+struct IObject{
+    virtual ~IObject(){};
+    virtual void unref() = 0;
+};
+
 struct Value {
     Type *type {nullptr};
-
     union {
         int64_t as_long;
         char as_char;
@@ -25,11 +29,15 @@ struct Value {
         this->type = type;
     }
     void deinit(){
-
+        if(!type->isPrimetiveType()){
+            auto obj = (IObject*)as_ptr;
+            obj->unref();
+        }
     }
     const char* typeStr(){
         return type->id.data();
     }
+    void setPrimitiveValue(Type *type, char* ptr);
 };
 
 }
