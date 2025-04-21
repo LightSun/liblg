@@ -6,7 +6,7 @@ using namespace h7l;
 void MemoryBlock::freeData(){
     if(data){
         if(hasFlag(kMemoryFlag_FREE)){
-            H7L_FREE(data);
+            free(data);
         }else if(hasFlag(kMemoryFlag_SHARE)){
             ShareData* sd = (ShareData*)data;
             sd->unref();
@@ -22,9 +22,9 @@ void MemoryBlock::setStringAsData(CString buf){
     int mod = actLen % 8;
     int cap = mod > 0 ? (actLen / 8 + 1) * 8 : actLen;
     if(data){
-        data = H7L_REALLOC(data, cap);
+        data = realloc(data, cap);
     }else{
-        data = H7L_ALLOC(cap);
+        data = malloc(cap);
     }
     memcpy(data, buf.data(), buf.length());
     dataPtr()[buf.length()] = '\0';

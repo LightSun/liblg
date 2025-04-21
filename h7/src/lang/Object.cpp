@@ -20,7 +20,7 @@ Object::~Object(){
 void Object::unref(){
     if(h_atomic_add(&_ref, -1) == 1){
         mb.freeData();
-        H7L_FREE(this);
+        delete this;
     }
 }
 U32 Object::dataSize(){
@@ -44,7 +44,7 @@ Object* Object::subArray(int index){
                 alignSize = 8 - actDataSize % 8 + actDataSize;
             }
             //
-            obj = (Object*)H7L_ALLOC(sizeof(Object));
+            obj = new Object();
             obj->mb.reset();
             ShareData* sd = (ShareData*)mb.data;
             sd->ref();

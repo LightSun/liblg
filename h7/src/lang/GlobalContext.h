@@ -10,40 +10,36 @@ namespace h7l {
 class GlobalContext
 {
 public:
+    using SPType = std::shared_ptr<Type>;
     GlobalContext(){}
     ~GlobalContext(){
-        auto it = m_typeMap.begin();
-        for(; it != m_typeMap.end(); ++it){
-            H7L_FREE(it->second);
-        }
     }
-
     Type* getType(CString tname)const{
         auto it = m_typeMap.find(tname);
         if(it != m_typeMap.end()){
-            return it->second;
+            return it->second.get();
         }
         return nullptr;
     }
     Class* getClass(CString tname)const{
         auto it = m_typeMap.find(tname);
         if(it != m_typeMap.end()){
-            return dynamic_cast<Class*>(it->second);
+            return dynamic_cast<Class*>(it->second.get());
         }
         return nullptr;
     }
-    void putType(Type* type){
-        m_typeMap[type->id] = std::move(type);
+    void putType(SPType type){
+        m_typeMap[type->id] = type;
     }
     template<typename T>
     Type* putRawType(){
-        auto crc = (T*)H7L_ALLOC(sizeof(T));
+        auto crc = std::make_shared<T>();
         crc->init();
         putType(crc);
-        return crc;
+        return (Type*)crc.get();
     }
 private:
-    std::map<String, Type*> m_typeMap;
+    std::unordered_map<String, SPType> m_typeMap;
 };
 
 }

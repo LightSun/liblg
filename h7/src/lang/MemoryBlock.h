@@ -18,8 +18,9 @@ struct ShareData{
     volatile int _ref {1};
 
     static ShareData* New(size_t alignSize){
-        auto sd = (ShareData*)H7L_ALLOC(sizeof(ShareData));
-        sd->data = H7L_ALLOC(alignSize);
+        //auto sd = (ShareData*)H7L_ALLOC(sizeof(ShareData));
+        auto sd = new ShareData();
+        sd->data = malloc(alignSize);
         sd->_ref = 1;
         return sd;
     }
@@ -31,10 +32,10 @@ struct ShareData{
     void unref(){
         if(h_atomic_add(&_ref, -1) == 1){
             if(data){
-                H7L_FREE(data);
+                free(data);
                 data = nullptr;
             }
-            H7L_FREE(this);
+            delete (this);
         }
     }
 };
@@ -68,7 +69,7 @@ struct MemoryBlock{
         addFlag(kMemoryFlag_SHARE);
     }
     void initWithStructSize(size_t structSize){
-        data = H7L_ALLOC(structSize);
+        data = malloc(structSize);
         len = structSize;
         cap = structSize;
         offset = 0;
