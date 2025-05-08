@@ -71,7 +71,7 @@ struct Class: public Type{
 
     bool isPrimetiveType() override{return false;}
     String getName()const{return id;}
-    Field& getFieldAt(int idx){fields[idx];}
+    Field& getFieldAt(int idx){return fields[idx];}
 
     void init(GlobalContext* gc, CList<MemberInfo> types, CList<String> names);
 

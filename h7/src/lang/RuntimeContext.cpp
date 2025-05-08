@@ -33,7 +33,7 @@ void RuntimeContext::init(GlobalContext* gc){
 }
 RuntimeContext::RuntimeContext(Scope* scope): Object(scope, CLASS){
 }
-std::unique_ptr<RuntimeContext> ofVM(VM* vm, Type* type){
+std::unique_ptr<RuntimeContext> RuntimeContext::ofVM(VM* vm, Type* type){
     auto ptr = std::make_unique<RuntimeContext>(vm->scope_);
     ptr->type = type;
     return ptr;

@@ -9,11 +9,10 @@
 using namespace h7l;
 
 TEST_CASE( "Test Object", "" ) {
+    //REQUIRE( factorial(10) == 3'628'800 );
     auto gc = std::make_unique<GlobalContext>();
     auto scope = std::make_unique<Scope>(gc.get());
     auto cls = std::make_unique<Class>();
     cls->init(gc.get(), {MemberInfo(gc->getType(TYPE_ID_INT))}, {"a"});
     auto obj = scope->newObject(cls.get());
-    obj->get
-    REQUIRE( factorial(10) == 3'628'800 );
 }
