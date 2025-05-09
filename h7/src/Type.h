@@ -2,29 +2,13 @@
 
 #include <map>
 #include "common/common.h"
-
-#define TYPE_ID_INT "int"
-#define TYPE_ID_CHAR "char"
-#define TYPE_ID_SHORT "short"
-#define TYPE_ID_LONG "long"
-#define TYPE_ID_FLOAT "float"
-#define TYPE_ID_DOUBLE "double"
+#include "src/cons.h"
 
 namespace h7l {
 
 struct Value;
 struct Type;
 struct RuntimeContext;
-
-enum FuncOp{
-    kFuncOp_add,
-    kFuncOp_sub,
-    kFuncOp_multi,
-    kFuncOp_divide,
-    kFuncOp_mod,
-    kFuncOp_copy,
-    kFuncOp_deepCopy,
-};
 
 struct Type{
     String id;

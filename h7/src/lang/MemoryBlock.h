@@ -3,19 +3,27 @@
 #include <memory.h>
 #include "utils/h_atomic.h"
 #include "common/common.h"
-#include "src/lang/Allocator.h"
+//#include "src/lang/Allocator.h"
+
+#define _H7L_MEM_GET_PRI_FUNC(T, MT)\
+    T get##MT(T defVal = -1){\
+        T data;\
+        int typeSize;\
+        if(getPrimitiveValue(&data, &typeSize) && typeSize == sizeof(T)){\
+            return data;\
+        }\
+        return defVal;\
+    }
 
 namespace h7l {
-
-enum MemoryFlags{
-    kMemoryFlag_FREE    = 0x0001,
-    kMemoryFlag_SHARE   = 0x0002,
-    //kMemoryFlag_NO_CARE = 0x0004,
-};
 
 struct ShareData{
     void* data {nullptr};
     volatile int _ref {1};
+
+    ~ShareData(){
+        unref();
+    }
 
     static ShareData* New(size_t alignSize){
         //auto sd = (ShareData*)H7L_ALLOC(sizeof(ShareData));
@@ -29,22 +37,14 @@ struct ShareData{
         h_atomic_add(&_ref, 1);
     }
     //fetch_add
-    void unref(){
-        if(h_atomic_add(&_ref, -1) == 1){
-            if(data){
-                free(data);
-                data = nullptr;
-            }
-            delete (this);
-        }
-    }
+    void unref();
 };
 
 struct MemoryBlock{
     void* data {nullptr};
-    U32 len;        //for string , exclude tail which is '\0'
-    U32 cap {0};    //after align
-    U32 offset {0}; //offset of share-data
+    U32 len {0};        //for string , exclude tail which is '\0'
+    U32 cap {0};        //after align
+    U32 offset {0};     //offset of share-data
     U32 flags {0};
 
     ~MemoryBlock(){freeData();}
@@ -60,20 +60,31 @@ struct MemoryBlock{
     void setStringAsData(CString buf);
     void freeData();
 
-    void initWithShareData(ShareData* sd, int _len, int _alignSize){
-        data = sd;
-        len = _len;
-        cap = _alignSize;
-        offset = 0;
-        addFlag(kMemoryFlag_SHARE);
+    //-1 for non-primitive
+    int getPrimitiveType()const;
+    //false for non-primitive
+    bool getPrimitiveValue(void* ptr, int* typeSize = nullptr);
+    void initWithWrapPrimitive(int priType, void* ptr);
+    void initWithWrapPrimitivePtr(int priType, void* ptr);
+    void initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr);
+
+    _H7L_MEM_GET_PRI_FUNC(char, Char);
+    _H7L_MEM_GET_PRI_FUNC(unsigned char, UChar);
+    _H7L_MEM_GET_PRI_FUNC(short, Short);
+    _H7L_MEM_GET_PRI_FUNC(unsigned short, UShort);
+    _H7L_MEM_GET_PRI_FUNC(int, Int);
+    _H7L_MEM_GET_PRI_FUNC(unsigned int, UInt);
+    _H7L_MEM_GET_PRI_FUNC(long long, Long);
+    _H7L_MEM_GET_PRI_FUNC(unsigned long long, ULong);
+    _H7L_MEM_GET_PRI_FUNC(float, Float);
+    _H7L_MEM_GET_PRI_FUNC(double, Double);
+
+    bool getBool(bool defVal = false){
+        return getChar(defVal) != 0;
     }
-    void initWithStructSize(size_t structSize){
-        data = malloc(structSize);
-        len = structSize;
-        cap = structSize;
-        offset = 0;
-        addFlag(kMemoryFlag_FREE);
-    }
+    void initWithShareData(ShareData* sd, int _len, int _alignSize);
+    void initWithStructSize(size_t structSize);
+    //may need freeData() before.
     void reset(){
         memset(this, 0, sizeof(MemoryBlock));
     }

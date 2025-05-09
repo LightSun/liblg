@@ -5,13 +5,10 @@
 
 using namespace h7l;
 
-#define CLASS_NAME_sRTC "h7l.RuntimeContext"
-#define CLASS_NAME_VM "h7l.VM"
-
 namespace h7l{
 struct Class_VM : public Class{
     Class_VM(){
-        id = "h7l.VM";
+        id = H7L_CLASS_NAME_VM;
         structSize = sizeof(VM);
         arrayDimCnt = 0;
     }
@@ -19,7 +16,7 @@ struct Class_VM : public Class{
 
 struct Class_RuntimeContext : public Class{
     Class_RuntimeContext(){
-        id = "h7l.RuntimeContext";
+        id = H7L_CLASS_NAME_RC;
         //reg methods?
         structSize = sizeof(RuntimeContext);
         arrayDimCnt = 0;

@@ -15,10 +15,11 @@ file(GLOB_RECURSE SRC_H7
         *.c
         *.cpp
     )
-add_library(libh7l
+add_library(h7l
     ${SRC_H7}
     )
 
+target_compile_definitions(h7l PUBLIC H7L_DBG_ShareData_DELETE)
 ###
 
 
