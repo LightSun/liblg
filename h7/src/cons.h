@@ -32,7 +32,7 @@ enum PrimiveType{
     kPriType_BOOL,
     kPriType_FLOAT,
     kPriType_DOUBLE,
-    };
+};
 
 enum FuncOp{
     kFuncOp_add,
@@ -42,7 +42,7 @@ enum FuncOp{
     kFuncOp_mod,
     kFuncOp_copy,
     kFuncOp_deepCopy,
-    };
+};
 
 int primitive_get_size(int priType);
 

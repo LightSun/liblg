@@ -9,10 +9,6 @@ struct Class;
 struct Allocator;
 class Scope;
 
-enum ObjectFlags{
-   // kObjectFlag_MB_FREE,
-};
-
 struct ArrayDesc{
     List<int> shapes;
     List<int> strides;
@@ -62,7 +58,7 @@ struct Object: public IObject{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
-    Class* clsInfo {nullptr}; //baseType
+    Type* clsInfo {nullptr}; //baseType
     Object* super {nullptr};
     volatile int _ref {1};
     U32 flags {0};

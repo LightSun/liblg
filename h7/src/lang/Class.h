@@ -69,7 +69,6 @@ struct Class: public Type{
     }
     Class(CString _id): Type(_id){}
 
-    bool isPrimetiveType() override{return false;}
     String getName()const{return id;}
     Field& getFieldAt(int idx){return fields[idx];}
 

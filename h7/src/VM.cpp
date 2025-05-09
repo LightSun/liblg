@@ -36,7 +36,7 @@ void VM::call(Operation* pc){
     call->init(pc, this->pc);
     this->pc = pc;
 }
-bool VM::add(Position pos, Value* inOut, Value* p1){
+bool VM::add(Position, Value* inOut, Value* p1){
     auto *t = inOut->type;
 
     if (p1->type != t) {

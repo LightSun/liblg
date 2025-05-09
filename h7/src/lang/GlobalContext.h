@@ -24,7 +24,7 @@ public:
     Class* getClass(CString tname)const{
         auto it = m_typeMap.find(tname);
         if(it != m_typeMap.end()){
-            return dynamic_cast<Class*>(it->second.get());
+            return !it->second->isPrimetiveType()? (Class*)it->second.get() : nullptr;
         }
         return nullptr;
     }

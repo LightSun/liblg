@@ -13,31 +13,28 @@ struct IObject{
 };
 
 struct Value {
-    Type *type {nullptr};
-    union {
-        int64_t as_long;
-        char as_char;
-        unsigned char as_uchar;
-        short as_short;
-        int as_int;
-        unsigned int as_uint;
-        float as_float;
-        double as_double;
-        void *as_ptr;
-    };
-    void init(Type *type){
-        this->type = type;
+    IObject* objPtr {nullptr};
+//    union {
+//        int64_t as_long;
+//        char as_char;
+//        unsigned char as_uchar;
+//        short as_short;
+//        int as_int;
+//        unsigned int as_uint;
+//        float as_float;
+//        double as_double;
+//        void *as_ptr;
+//    };
+
+    Type* getType(){
+//TODO
     }
     void deinit(){
-        if(!type->isPrimetiveType()){
-            auto obj = (IObject*)as_ptr;
-            obj->unref();
+        if(objPtr){
+            objPtr->unref();
+            objPtr = nullptr;
         }
     }
-    const char* typeStr(){
-        return type->id.data();
-    }
-    void setPrimitiveValue(Type *type, char* ptr);
 };
 
 }

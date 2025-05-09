@@ -13,7 +13,7 @@ struct GlobalContext;
 struct RuntimeContext: public Object{
 
     VM* vm {nullptr};
-    Type* type {nullptr};
+    Type* type {nullptr}; //main type
 
     static Class* CLASS;
     static void init(GlobalContext* gc);
