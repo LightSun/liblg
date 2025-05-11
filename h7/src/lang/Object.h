@@ -2,6 +2,8 @@
 
 #include "src/lang/MemoryBlock.h"
 #include "src/Value.h"
+#include "src/lang/macro.h"
+#include "common/c_common.h"
 
 namespace h7l {
 
@@ -58,7 +60,7 @@ struct Object: public IObject{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
-    Type* clsInfo {nullptr}; //baseType
+    Class* clsInfo {nullptr}; //baseType
     Object* super {nullptr};
     volatile int _ref {1};
     U32 flags {0};
@@ -74,16 +76,21 @@ struct Object: public IObject{
     }
     //fetch_add
     void unref() override;
+
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}
     void* getDataPtr(){return mb.getDataPtr();}
     U32 dataSize();
     bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
+    void reset();
     //
     void setStringAsData(CString buf){
         mb.setStringAsData(buf);
     }
     Object* subArray(int index);
+    //may need reset
+    H7L_DEF_OBJ_WRAP_BASE(mb)
+    H7L_DEF_OBJ_WRAP_BASE_PTR(mb)
 
 private:
     void init0(Scope* scope, Class* clsInfo, ShareData* sd,

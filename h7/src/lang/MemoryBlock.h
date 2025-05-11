@@ -68,16 +68,16 @@ struct MemoryBlock{
     void initWithWrapPrimitivePtr(int priType, void* ptr);
     void initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr);
 
-    _H7L_MEM_GET_PRI_FUNC(char, Char);
-    _H7L_MEM_GET_PRI_FUNC(unsigned char, UChar);
-    _H7L_MEM_GET_PRI_FUNC(short, Short);
-    _H7L_MEM_GET_PRI_FUNC(unsigned short, UShort);
-    _H7L_MEM_GET_PRI_FUNC(int, Int);
-    _H7L_MEM_GET_PRI_FUNC(unsigned int, UInt);
-    _H7L_MEM_GET_PRI_FUNC(long long, Long);
-    _H7L_MEM_GET_PRI_FUNC(unsigned long long, ULong);
-    _H7L_MEM_GET_PRI_FUNC(float, Float);
-    _H7L_MEM_GET_PRI_FUNC(double, Double);
+    _H7L_MEM_GET_PRI_FUNC(char, Char)
+    _H7L_MEM_GET_PRI_FUNC(unsigned char, UChar)
+    _H7L_MEM_GET_PRI_FUNC(short, Short)
+    _H7L_MEM_GET_PRI_FUNC(unsigned short, UShort)
+    _H7L_MEM_GET_PRI_FUNC(int, Int)
+    _H7L_MEM_GET_PRI_FUNC(unsigned int, UInt)
+    _H7L_MEM_GET_PRI_FUNC(long long, Long)
+    _H7L_MEM_GET_PRI_FUNC(unsigned long long, ULong)
+    _H7L_MEM_GET_PRI_FUNC(float, Float)
+    _H7L_MEM_GET_PRI_FUNC(double, Double)
 
     bool getBool(bool defVal = false){
         return getChar(defVal) != 0;

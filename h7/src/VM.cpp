@@ -37,37 +37,61 @@ void VM::call(Operation* pc){
     this->pc = pc;
 }
 bool VM::add(Position, Value* inOut, Value* p1){
-    auto *t = inOut->type;
+    // auto *t = inOut->type;
 
-    if (p1->type != t) {
-      MED_ASSERT_F(false, "Expected type %s, actual %s", inOut->typeStr(),
-                   p1->typeStr());
-      return false;
-    }
-    auto rc = RuntimeContext::ofVM(this, inOut->type);
-    return t->call(kFuncOp_add, rc.get(), inOut, p1);
+    // if (p1->type != t) {
+    //   MED_ASSERT_F(false, "Expected type %s, actual %s", inOut->typeStr(),
+    //                p1->typeStr());
+    //   return false;
+    // }
+    // auto rc = RuntimeContext::ofVM(this, inOut->type);
+    // return t->call(kFuncOp_add, rc.get(), inOut, p1);
 }
 Value* VM::copyValue(Stack* stack, Value* src){
-    auto dst = stack->push();
+    // auto dst = stack->push();
 
-    auto rc = RuntimeContext::ofVM(this, src->type);
-    if (src->type->call(kFuncOp_copy, rc.get(), dst, src)) {
-        dst->type = src->type;
-    } else {
-        *dst = *src;
-    }
-    return dst;
+    // auto rc = RuntimeContext::ofVM(this, src->type);
+    // if (src->type->call(kFuncOp_copy, rc.get(), dst, src)) {
+    //     dst->type = src->type;
+    // } else {
+    //     *dst = *src;
+    // }
+    // return dst;
 }
 Value* VM::deepCopyValue(Stack* stack, Value* src){
-    auto dst = stack->push();
+    // auto dst = stack->push();
 
-    auto rc = RuntimeContext::ofVM(this, src->type);
-    if (src->type->call(kFuncOp_deepCopy, rc.get(), dst, src)) {
-        dst->type = src->type;
-    } else {
-        *dst = *src;
-    }
-    return dst;
+    // auto rc = RuntimeContext::ofVM(this, src->type);
+    // if (src->type->call(kFuncOp_deepCopy, rc.get(), dst, src)) {
+    //     dst->type = src->type;
+    // } else {
+    //     *dst = *src;
+    // }
+    // return dst;
+}
+
+bool VM::beq(Stack* stack, Operation* op){
+    //if ((stack->peek() - op->as_beq.i)->as_int == op->as_beq.cond) {
+}
+
+bool VM::bgr(Stack* stack, Operation *op){
+    // if ((stack->peek() - op->as_bgr.i)->as_int > op->as_bgr.cond) {
+}
+
+bool VM::ble(Stack* stack, Operation *op){
+    //    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
+    //      vm->pc = lg_vec_get(&vm->ops, op->as_ble.pc);
+    //    }
+}
+
+bool VM::copy(Stack* stack, Operation *op){
+    // auto _val = stack->peek();
+    // copyValue(stack, (_val - op->as_cp.i));
+}
+
+bool VM::dec(Stack* stack, Operation *op){
+    // auto _val = stack->peek();
+    // (_val - op->as_dec.i)->as_int--;
 }
 
 
@@ -98,13 +122,13 @@ void VM::exec(Stack *stack, size_t start_pc){
         LG_DISPATCH();
     }
     beq: {
-        if ((stack->peek() - op->as_beq.i)->as_int == op->as_beq.cond) {
+        if (beq(stack, op)) {
           vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_beq.pc);
         }
         LG_DISPATCH();
     }
     bgr: {
-        if ((stack->peek() - op->as_bgr.i)->as_int > op->as_bgr.cond) {
+        if (bgr(stack, op)) {
           vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_bgr.pc);
         }
 
@@ -112,8 +136,7 @@ void VM::exec(Stack *stack, size_t start_pc){
     }
     ble: {
         //默认直接使用结构体的匿名成员做减法(_val - op->as_ble.i)。
-        auto _val = stack->peek();
-        if ((_val - op->as_ble.i)->as_int < op->as_ble.cond) {
+        if (ble(stack, op)) {
             vm->pc = (Operation*)lg_vec_get(&vm->ops, op->as_ble.pc);
         }
         //    if ((lg_peek(stack) - op->as_ble.i)->as_int < op->as_ble.cond) {
@@ -128,13 +151,11 @@ void VM::exec(Stack *stack, size_t start_pc){
         LG_DISPATCH();
     }
     cp: {
-        auto _val = stack->peek();
-        copyValue(stack, (_val - op->as_cp.i));
+        copy(stack, op);
         LG_DISPATCH();
     }
     dec: {
-        auto _val = stack->peek();
-        (_val - op->as_dec.i)->as_int--;
+        dec(stack, op)
         LG_DISPATCH();
     }
     drop: {

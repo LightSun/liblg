@@ -29,6 +29,12 @@ struct VM {
     bool add(Position pos, Value* inOut, Value* v2);
     Value* copyValue(Stack* stack, Value* src);
     Value* deepCopyValue(Stack* stack, Value* src);
+    //
+    bool beq(Stack* stack, Operation *op);
+    bool bgr(Stack* stack, Operation *op);
+    bool ble(Stack* stack, Operation *op);
+    bool copy(Stack* stack, Operation *op);
+    bool dec(Stack* stack, Operation *op);
 };
 
 }

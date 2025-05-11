@@ -33,6 +33,15 @@ U32 Object::dataSize(){
     }
     return clsInfo->structSize;
 }
+void Object::reset(){
+    mb.freeData();
+    scope = nullptr;
+    clsInfo = nullptr;
+    super = nullptr;
+    arrayDesc = nullptr;
+    flags = 0;
+    h_atomic_set(&_ref, 1);
+}
 Object* Object::subArray(int index){
     Object* obj = nullptr;
     if(isArray()){
@@ -40,13 +49,13 @@ Object* Object::subArray(int index){
         auto newDesc = std::make_unique<ArrayDesc>(clsInfo->structSize);
         if(arrayDesc->toSubArray(index, offset, *newDesc)){
             //
-            U32 actDataSize = newDesc->eleCount * clsInfo->structSize;
-            U32 alignSize;
-            if(clsInfo->isPrimiveType()){
-                alignSize = actDataSize;
-            }else{
-                alignSize = 8 - actDataSize % 8 + actDataSize;
-            }
+            // U32 actDataSize = newDesc->eleCount * clsInfo->structSize;
+            // U32 alignSize;
+            // if(clsInfo->isPrimiveType()){
+            //     alignSize = actDataSize;
+            // }else{
+            //     alignSize = 8 - actDataSize % 8 + actDataSize;
+            // }
             //
             obj = new Object();
             obj->mb.reset();
@@ -65,13 +74,16 @@ Object* Object::subArray(int index){
 }
 //-----------------------
 void Object::init0(Scope* scope, Class* clsInfo, ShareData* sd, std::unique_ptr<ArrayDesc> desc){
-    MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
+    MED_ASSERT_X(!clsInfo || !clsInfo->isArrayType(), "clsInfo must not be array type.");
     this->scope = scope;
     this->clsInfo = clsInfo;
     this->super = nullptr;
     this->_ref = 1;
     this->flags = 0;
-    if(desc){
+    if(clsInfo == nullptr){
+        this->arrayDesc = nullptr;
+    }
+    else if(desc){
         arrayDesc = std::move(desc);
         U32 actDataSize = arrayDesc->eleCount * clsInfo->structSize;
         U32 alignSize;

@@ -33,7 +33,11 @@ typedef signed long long sint64;
 typedef uint64_t uint64;
 #else
 //typedef unsigned long long uint64;
+#ifdef uint64_t
 typedef uint64_t uint64;
+#else
+typedef unsigned long long uint64;
+#endif
 #endif
 #endif
 

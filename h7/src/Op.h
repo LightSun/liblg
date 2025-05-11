@@ -48,18 +48,21 @@ enum Opcode {
 };
 
 struct beq_op {
-  int64_t cond;
-  size_t i, pc;
+  Value cond;
+  Value v; //size_t i
+  size_t pc;
 };
 
 struct bgr_op {
-  int64_t cond;
-  size_t i, pc;
+  Value cond;
+  Value v;
+  size_t pc;
 };
 
 struct ble_op {
-  int64_t cond;
-  size_t i, pc;
+  Value cond;
+  Value v;
+  size_t pc;
 };
 
 struct call_op {
@@ -67,11 +70,11 @@ struct call_op {
 };
 
 struct cp_op {
-  size_t i;
+  Value v;
 };
 
 struct dec_op {
-  size_t i;
+  Value v;
 };
 
 struct drop_op {

@@ -10,31 +10,33 @@
 
 using namespace h7l;
 
+
+//TODO init ?
 void Operation::init(Position pos, enum Opcode code){
     this->pos = pos;
     this->code = code;
     auto _ = this;
     switch (_->code) {
     case LG_BEQ:
-      _->as_beq.i = 0;
+      //_->as_beq.i = 0;
       _->as_beq.pc = -1;
       break;
     case LG_BGR:
-      _->as_bgr.i = 0;
+     // _->as_bgr.i = 0;
       _->as_bgr.pc = -1;
       break;
     case LG_BLE:
-      _->as_ble.i = 0;
+      //_->as_ble.i = 0;
       _->as_ble.pc = -1;
       break;
     case LG_CALL:
       _->as_call.pc = -1;
       break;
     case LG_CP:
-      _->as_cp.i = 0;
+      //_->as_cp.i = 0;
       break;
     case LG_DEC:
-      _->as_dec.i = 0;
+      //_->as_dec.i = 0;
       break;
     case LG_DROP:
       _->as_drop.i = 0;

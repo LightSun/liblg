@@ -1,18 +1,21 @@
 #include "structs.h"
+#include "common/c_common.h"
 
 using namespace h7l;
 
 namespace h7l {
 // 常见类型映射表（64位系统）
 static const std::unordered_map<std::string, TypeInfo> sBase_type_map = {
-    {"char",    {sizeof(char), sizeof(char)}},
+    {"char",    {sizeof(sint8), sizeof(sint8)}},
     {"uchar",   {sizeof(unsigned char), sizeof(unsigned char)}},
     {"short",   {sizeof(short), sizeof(short)}},
+    {"ushort",   {sizeof(short), sizeof(short)}},
     {"int",     {sizeof(int), sizeof(int)}},
-    {"uint",    {sizeof(uint), sizeof(uint)}},
+    {"uint",    {sizeof(unsigned int), sizeof(unsigned int)}},
     {"float",   {sizeof(float), sizeof(float)}},
     {"double",  {sizeof(double), sizeof(double)}},
-    {"long",    {sizeof(int64_t), sizeof(int64_t)}},
+    {"long",    {sizeof(sint64), sizeof(sint64)}},
+    {"ulong",   {sizeof(uint64), sizeof(uint64)}},
     {"void*",   {sizeof(void*), sizeof(void*)}}
 };
 
