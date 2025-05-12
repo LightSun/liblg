@@ -92,6 +92,10 @@ struct Object{
     H7L_DEF_OBJ_WRAP_BASE(mb)
     H7L_DEF_OBJ_WRAP_BASE_PTR(mb)
 
+    bool cast(int priType){
+
+    }
+
 private:
     void init0(Scope* scope, Class* clsInfo, ShareData* sd,
                std::unique_ptr<ArrayDesc> desc);

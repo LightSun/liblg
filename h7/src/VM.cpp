@@ -37,7 +37,7 @@ void VM::call(Operation* pc){
     this->pc = pc;
 }
 bool VM::add(Position, Value* inOut, Value* p1){
-    // auto *t = inOut->type;
+     auto *t = inOut->getType();
 
     // if (p1->type != t) {
     //   MED_ASSERT_F(false, "Expected type %s, actual %s", inOut->typeStr(),
