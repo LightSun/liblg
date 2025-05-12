@@ -56,11 +56,11 @@ struct ArrayDesc{
     }
 };
 
-struct Object: public IObject{
+struct Object{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
-    Class* clsInfo {nullptr}; //baseType
+    Class* clsInfo {nullptr};
     Object* super {nullptr};
     volatile int _ref {1};
     U32 flags {0};
@@ -75,7 +75,7 @@ struct Object: public IObject{
         h_atomic_add(&_ref, 1);
     }
     //fetch_add
-    void unref() override;
+    void unref();
 
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}

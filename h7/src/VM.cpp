@@ -155,7 +155,7 @@ void VM::exec(Stack *stack, size_t start_pc){
         LG_DISPATCH();
     }
     dec: {
-        dec(stack, op)
+        dec(stack, op);
         LG_DISPATCH();
     }
     drop: {

@@ -7,24 +7,14 @@
 
 namespace h7l {
 
-struct IObject{
-    virtual ~IObject(){};
-    virtual void unref() = 0;
-};
+struct Object;
 
 struct Value {
     bool temp {true};
-    IObject* objPtr {nullptr};
+    Object* objPtr {nullptr};
 
-    Type* getType(){
-//TODO
-    }
-    void deinit(){
-        if(objPtr && !temp){
-            objPtr->unref();
-            objPtr = nullptr;
-        }
-    }
+    Type* getType();
+    void deinit();
 };
 
 }
