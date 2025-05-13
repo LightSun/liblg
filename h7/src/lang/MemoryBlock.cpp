@@ -51,8 +51,8 @@ void* MemoryBlock::getDataPtr(){
     return nullptr;
 }
 void MemoryBlock::freeData(){
-    if(hasFlag(kMemFlag_WRAP_PRIMITIVE)
-        || hasFlag(kMemFlag_WRAP_PRIMITIVE_PTR)){
+    //kMemFlag_WRAP_PRIMITIVE_PTR may with share
+    if(hasFlag(kMemFlag_WRAP_PRIMITIVE)){
         return;
     }
     if(data){

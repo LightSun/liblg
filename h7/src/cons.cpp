@@ -19,6 +19,6 @@ int primitive_get_size(int priType){
         {kPriType_DOUBLE, sizeof(double)},
     };
     auto it = s_pri_sizeMap.find(priType);
-    return it != s_pri_sizeMap.end() ? it->second : -1;
+    return it != s_pri_sizeMap.end() ? it->second : 0;
 }
 }

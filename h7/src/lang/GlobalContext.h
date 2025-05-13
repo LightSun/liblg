@@ -21,6 +21,13 @@ public:
         }
         return nullptr;
     }
+    Type* getPrimitiveType(int priType){
+        auto it = m_priTypeMap.find(priType);
+        if(it != m_priTypeMap.end()){
+            return it->second;
+        }
+        return nullptr;
+    }
     Class* getClass(CString tname)const{
         auto it = m_typeMap.find(tname);
         if(it != m_typeMap.end()){
@@ -30,6 +37,9 @@ public:
     }
     void putType(SPType type){
         m_typeMap[type->id] = type;
+        if(type->isPrimetiveType()){
+            m_priTypeMap[type->priType] = type.get();
+        }
     }
     template<typename T>
     Type* putRawType(){
@@ -40,6 +50,7 @@ public:
     }
 private:
     std::unordered_map<String, SPType> m_typeMap;
+    std::unordered_map<int, Type*> m_priTypeMap;
 };
 
 }

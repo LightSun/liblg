@@ -36,17 +36,6 @@ void VM::call(Operation* pc){
     call->init(pc, this->pc);
     this->pc = pc;
 }
-bool VM::add(Position, Value* inOut, Value* p1){
-     auto *t = inOut->getType();
-
-    // if (p1->type != t) {
-    //   MED_ASSERT_F(false, "Expected type %s, actual %s", inOut->typeStr(),
-    //                p1->typeStr());
-    //   return false;
-    // }
-    // auto rc = RuntimeContext::ofVM(this, inOut->type);
-    // return t->call(kFuncOp_add, rc.get(), inOut, p1);
-}
 Value* VM::copyValue(Stack* stack, Value* src){
     // auto dst = stack->push();
 
@@ -70,6 +59,25 @@ Value* VM::deepCopyValue(Stack* stack, Value* src){
     // return dst;
 }
 
+bool VM::add(Stack* stack, Operation *op){
+    //        auto y = stack->pop();
+    //        add(op->pos, stack->peek(), y);
+    //        y->deinit();
+    auto p1 = stack->pop();
+    auto inOut = stack->peek();
+    //
+    auto t = inOut->getType();
+    auto pt = p1->getType();
+    if (t->id != pt->id) {
+        MED_ASSERT_F(false, "Expected type %s, actual %s", t->id.data(),
+                    pt->id.data());
+        return false;
+    }
+    auto rc = RuntimeContext::ofVM(this, t);
+    auto ret = t->call(kFuncOp_add, rc.get(), inOut, p1);
+    inOut->deinit();
+    return ret;
+}
 bool VM::beq(Stack* stack, Operation* op){
     //if ((stack->peek() - op->as_beq.i)->as_int == op->as_beq.cond) {
 }
@@ -116,9 +124,10 @@ void VM::exec(Stack *stack, size_t start_pc){
     LG_DISPATCH();
 
     add: {
-        auto y = stack->pop();
-        add(op->pos, stack->peek(), y);
-        y->deinit();
+//        auto y = stack->pop();
+//        add(op->pos, stack->peek(), y);
+//        y->deinit();
+        add(stack, op);
         LG_DISPATCH();
     }
     beq: {

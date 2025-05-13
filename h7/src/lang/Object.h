@@ -60,7 +60,7 @@ struct Object{
 
     MemoryBlock mb;
     Scope* scope {nullptr};
-    Class* clsInfo {nullptr};
+    Type* type {nullptr};
     Object* super {nullptr};
     volatile int _ref {1};
     U32 flags {0};
@@ -74,15 +74,27 @@ struct Object{
     void ref(){
         h_atomic_add(&_ref, 1);
     }
+    int getRefCnt(){
+        return h_atomic_get(&_ref);
+    }
     //fetch_add
     void unref();
 
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}
     void* getDataPtr(){return mb.getDataPtr();}
-    U32 dataSize();
+    U32 getDataSize();
+    U32 getBaseDataSize();
     bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
     void reset();
+
+    Class* getClass()const{
+        if(mb.getPrimitiveType() == -1){
+            return (Class*)type;
+        }
+        return nullptr;
+    }
+    Type* asType(){return type;}
     //
     void setStringAsData(CString buf){
         mb.setStringAsData(buf);
@@ -92,12 +104,14 @@ struct Object{
     H7L_DEF_OBJ_WRAP_BASE(mb)
     H7L_DEF_OBJ_WRAP_BASE_PTR(mb)
 
-    bool cast(int priType){
-
-    }
+    //int-like --> int-like : checkSize enough
+    //float-like --> float-like : checkSize enough
+    //int -> float or float -> int : ptr -> non-ptr
+    bool castPrimitive(int priType);
+    bool castPrimitiveTo(int priType, void* newPtr);
 
 private:
-    void init0(Scope* scope, Class* clsInfo, ShareData* sd,
+    void init0(Scope* scope, Type* type, ShareData* sd,
                std::unique_ptr<ArrayDesc> desc);
 };
 

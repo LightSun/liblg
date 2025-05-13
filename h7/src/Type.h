@@ -12,7 +12,7 @@ struct RuntimeContext;
 
 struct Type{
     String id;
-    int priTYpe {kPriType_NONE};
+    int priType {kPriType_NONE};
 
     Type(){}
     Type(CString _id):id(_id){}
@@ -46,7 +46,7 @@ struct Type{
         }
         return false;
     }
-    bool isPrimetiveType()const{return priTYpe != kPriType_NONE;}
+    bool isPrimetiveType()const{return priType != kPriType_NONE;}
 
 public:
     //dst, src

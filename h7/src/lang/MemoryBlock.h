@@ -3,6 +3,7 @@
 #include <memory.h>
 #include "utils/h_atomic.h"
 #include "common/common.h"
+#include "src/cons.h"
 //#include "src/lang/Allocator.h"
 
 #define _H7L_MEM_GET_PRI_FUNC(T, MT)\
@@ -62,6 +63,8 @@ struct MemoryBlock{
 
     //-1 for non-primitive
     int getPrimitiveType()const;
+    int getPrimitiveSize()const{ return primitive_get_size(offset);}
+    bool isPrimitivePtr()const {return hasFlag(kMemFlag_WRAP_PRIMITIVE_PTR);}
     //false for non-primitive
     bool getPrimitiveValue(void* ptr, int* typeSize = nullptr);
     void initWithWrapPrimitive(int priType, void* ptr);

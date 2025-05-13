@@ -80,9 +80,6 @@ struct Class: public Type{
     bool isArrayType()const{
         return arrayDimCnt > 0;
     }
-    bool isPrimiveType()const{
-        return id.find(".") == String::npos;
-    }
     void copyTo(Class* dst){
         Type::copyTo(dst);
         dst->fields = this->fields;

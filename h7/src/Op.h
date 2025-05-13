@@ -12,7 +12,9 @@ struct VM;
 struct Stack;
 
 struct Position {
-  int row, col;
+    String filePath;
+    String str;
+    int lineNum {-1};
 };
 
 enum Opcode {

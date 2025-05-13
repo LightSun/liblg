@@ -10,11 +10,21 @@ namespace h7l {
 struct Object;
 
 struct Value {
-    bool temp {true};
     Object* objPtr {nullptr};
+    bool weakRef {true};
+
+    Value(){}
+    Value(Object* p, bool weakRef);
 
     Type* getType();
     void deinit();
+
+    bool isStrongRef()const{return !weakRef;}
+    bool isWeakRef()const{return weakRef;}
+    void toWeakRef();
+    void toStrongRef();
+
+    Value& operator=(const Value& v);
 };
 
 }

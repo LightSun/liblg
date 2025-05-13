@@ -44,6 +44,27 @@ enum FuncOp{
     kFuncOp_deepCopy,
 };
 
+//0 for non-primitive
 int primitive_get_size(int priType);
+
+static inline bool isIntLike(int priType){
+    switch (priType) {
+    case kPriType_CHAR:
+    case kPriType_UCHAR:
+    case kPriType_SHORT:
+    case kPriType_USHORT:
+    case kPriType_INT:
+    case kPriType_UINT:
+    case kPriType_LONG:
+    case kPriType_ULONG:
+    case kPriType_BOOL:
+        return true;
+    }
+    return false;
+}
+
+static inline bool isFloatLike(int priType){
+    return priType == kPriType_FLOAT || priType == kPriType_DOUBLE;
+}
 
 }
