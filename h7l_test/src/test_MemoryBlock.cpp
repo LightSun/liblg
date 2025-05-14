@@ -20,6 +20,19 @@ TEST_CASE("Test_MemoryBlock_int"){
     REQUIRE(!mb.getPrimitiveValue(&val));
 }
 
+TEST_CASE("Test_MemoryBlock_int_with_set"){
+    using namespace h7l;
+    int val = 10086;
+    MemoryBlock mb;
+    mb.initWithWrapPrimitive(kPriType_INT, &val);
+    REQUIRE(mb.getInt() == val);
+    mb.setPrimitiveValue(999.0);
+    REQUIRE(mb.getInt() == 999);
+
+    mb.setPrimitiveValue((short)128);
+    REQUIRE(mb.getInt() == 128);
+}
+
 TEST_CASE("Test_MemoryBlock_char"){
     using namespace h7l;
     char val = 99;

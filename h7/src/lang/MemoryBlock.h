@@ -3,6 +3,7 @@
 #include <memory.h>
 #include "utils/h_atomic.h"
 #include "common/common.h"
+#include "common/c_common.h"
 #include "src/cons.h"
 //#include "src/lang/Allocator.h"
 
@@ -14,6 +15,15 @@
             return data;\
         }\
         return defVal;\
+    }
+
+#define _H7L_MEM_SET_PRI_FUNC(T, MT)\
+    void setPrimitiveValue(T val){\
+        auto pt = getPrimitiveType();\
+        if(pt >= 0){\
+            auto dstPtr = getDataPtr();\
+            castPrimitiveValue(kPriType_##MT, pt, &val, dstPtr);\
+        }\
     }
 
 namespace h7l {
@@ -78,20 +88,32 @@ struct MemoryBlock{
     void initWithWrapPrimitivePtr(int priType, void* srcPtr, void* dstPtr);
     void initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr);
 
-    _H7L_MEM_GET_PRI_FUNC(char, Char)
-    _H7L_MEM_GET_PRI_FUNC(unsigned char, UChar)
-    _H7L_MEM_GET_PRI_FUNC(short, Short)
-    _H7L_MEM_GET_PRI_FUNC(unsigned short, UShort)
-    _H7L_MEM_GET_PRI_FUNC(int, Int)
-    _H7L_MEM_GET_PRI_FUNC(unsigned int, UInt)
-    _H7L_MEM_GET_PRI_FUNC(long long, Long)
-    _H7L_MEM_GET_PRI_FUNC(unsigned long long, ULong)
+    _H7L_MEM_GET_PRI_FUNC(sint8, Char)
+    _H7L_MEM_GET_PRI_FUNC(uint8, UChar)
+    _H7L_MEM_GET_PRI_FUNC(sint16, Short)
+    _H7L_MEM_GET_PRI_FUNC(uint16, UShort)
+    _H7L_MEM_GET_PRI_FUNC(sint32, Int)
+    _H7L_MEM_GET_PRI_FUNC(uint32, UInt)
+    _H7L_MEM_GET_PRI_FUNC(sint64, Long)
+    _H7L_MEM_GET_PRI_FUNC(uint64, ULong)
     _H7L_MEM_GET_PRI_FUNC(float, Float)
     _H7L_MEM_GET_PRI_FUNC(double, Double)
 
     bool getBool(bool defVal = false){
         return getChar(defVal) != 0;
     }
+    _H7L_MEM_SET_PRI_FUNC(bool, BOOL)
+    _H7L_MEM_SET_PRI_FUNC(sint8, CHAR)
+    _H7L_MEM_SET_PRI_FUNC(uint8, UCHAR)
+    _H7L_MEM_SET_PRI_FUNC(sint16, SHORT)
+    _H7L_MEM_SET_PRI_FUNC(uint16, USHORT)
+    _H7L_MEM_SET_PRI_FUNC(sint32, INT)
+    _H7L_MEM_SET_PRI_FUNC(uint32, UINT)
+    _H7L_MEM_SET_PRI_FUNC(sint64, LONG)
+    _H7L_MEM_SET_PRI_FUNC(uint64, ULONG)
+    _H7L_MEM_SET_PRI_FUNC(float, FLOAT)
+    _H7L_MEM_SET_PRI_FUNC(double, DOUBLE)
+
     void initWithShareData(ShareData* sd, int _len, int _alignSize);
     void initWithStructSize(size_t structSize);
     //may need freeData() before.

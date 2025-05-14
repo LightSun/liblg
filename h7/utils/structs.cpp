@@ -7,11 +7,11 @@ namespace h7l {
 // 常见类型映射表（64位系统）
 static const std::unordered_map<std::string, TypeInfo> sBase_type_map = {
     {"char",    {sizeof(sint8), sizeof(sint8)}},
-    {"uchar",   {sizeof(unsigned char), sizeof(unsigned char)}},
-    {"short",   {sizeof(short), sizeof(short)}},
-    {"ushort",   {sizeof(short), sizeof(short)}},
-    {"int",     {sizeof(int), sizeof(int)}},
-    {"uint",    {sizeof(unsigned int), sizeof(unsigned int)}},
+    {"uchar",   {sizeof(uint8), sizeof(uint8)}},
+    {"short",   {sizeof(sint16), sizeof(sint16)}},
+    {"ushort",   {sizeof(uint16), sizeof(uint16)}},
+    {"int",     {sizeof(sint32), sizeof(sint32)}},
+    {"uint",    {sizeof(uint32), sizeof(uint32)}},
     {"float",   {sizeof(float), sizeof(float)}},
     {"double",  {sizeof(double), sizeof(double)}},
     {"long",    {sizeof(sint64), sizeof(sint64)}},
