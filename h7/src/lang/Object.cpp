@@ -19,6 +19,7 @@ Object::Object(Scope* scope, Class* clsInfo, std::unique_ptr<ArrayDesc> desc){
 }
 
 Object::~Object(){
+    //fprintf(stderr,"Object::~Object\n");
     unref();
 }
 void Object::unref(){
@@ -47,12 +48,10 @@ U32 Object::getBaseDataSize(){
 }
 void Object::reset(){
     mb.freeData();
-    scope = nullptr;
     type = nullptr;
     super = nullptr;
     arrayDesc = nullptr;
     flags = 0;
-    h_atomic_set(&_ref, 1);
 }
 Object* Object::subArray(int index){
     Object* obj = nullptr;
@@ -87,7 +86,37 @@ Object* Object::subArray(int index){
 bool Object::castPrimitive(int priType){
     MED_ASSERT(scope);
     auto oldType = mb.getPrimitiveType();
-    MED_ASSERT_X(oldType >= 0, "only primitive can cast to primitive Type.");
+    if(oldType == priType){
+        return true;
+    }
+    char buf[sizeof(void*)];
+    int oldSize = 0;
+    if(!mb.getPrimitiveValue(buf, &oldSize)){
+        return false;
+    }
+    auto gc = scope->getGlobalContext();
+    this->type = gc->getPrimitiveType(priType);
+    auto newSize = primitive_get_size(priType);
+    //
+    if(oldSize == newSize){
+        if(primitive_isIntLike(oldType) && primitive_isIntLike(priType)){
+            mb.initWithWrapPrimitiveWithRawAddr(priType, buf);
+        }else{
+            mb.initWithWrapPrimitiveWithRawAddr2(priType, buf);
+        }
+        return true;
+    }
+    mb.freeData();
+
+    mb.initWithWrapPrimitive2(priType, buf);
+    return true;
+}
+bool Object::castPrimitiveTo(int priType, void* newPtr){
+    MED_ASSERT(scope);
+    auto oldType = mb.getPrimitiveType();
+    if(oldType == priType){
+        return true;
+    }
     char buf[sizeof(void*)];
     int oldSize = 0;
     if(!mb.getPrimitiveValue(buf, &oldSize)){
@@ -96,21 +125,9 @@ bool Object::castPrimitive(int priType){
     auto gc = scope->getGlobalContext();
     this->type = gc->getPrimitiveType(priType);
     //
-    if(mb.isPrimitivePtr()){
-        mb.freeData();
-        mb.initWithWrapPrimitive(priType, buf);
-        return true;
-    }
-    auto oldIntLike = isIntLike(oldType);
-    auto newIntLike = isIntLike(priType);
-    if(oldIntLike && newIntLike){
-        if(oldSize >= primitive_get_size(priType)){
-            //mb.initWithWrapPrimitive(priType, buf);
-        }
-    }
-}
-bool Object::castPrimitiveTo(int priType, void* newPtr){
-
+    mb.freeData();
+    mb.initWithWrapPrimitivePtr(priType, buf, newPtr);
+    return true;
 }
 //-----------------------
 void Object::init0(Scope* scope, Type* _type, ShareData* sd, std::unique_ptr<ArrayDesc> desc){

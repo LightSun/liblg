@@ -4,28 +4,28 @@
 #include <inttypes.h>
 
 #ifndef sint8
-typedef signed char sint8;
+typedef char sint8;
 #endif
 #ifndef uint8
 typedef unsigned char uint8;
 #endif
 
 #ifndef sint16
-typedef signed short sint16;
+typedef short sint16;
 #endif
 #ifndef uint16
 typedef unsigned short uint16;
 #endif
 
 #ifndef sint32
-typedef signed int sint32;
+typedef int sint32;
 #endif
 #ifndef uint32
 typedef unsigned int uint32;
 #endif
 
 #ifndef sint64
-typedef signed long long sint64;
+typedef long long sint64;
 #endif
 
 #ifndef uint64

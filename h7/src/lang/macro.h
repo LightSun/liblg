@@ -71,3 +71,48 @@ void wrapOfPrimitivePtr(sint8* val){\
     void wrapOfPrimitivePtr(bool* val){\
         mb.initWithWrapPrimitivePtr(kPriType_BOOL, val);\
 }
+
+#define H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType)\
+switch (dstPriType) {\
+case kPriType_CHAR:\
+case kPriType_BOOL:{\
+    char* dstP = (char*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_UCHAR:{\
+    uint8* dstP = (uint8*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_SHORT:{\
+    sint16* dstP = (sint16*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_USHORT:{\
+    uint16* dstP = (uint16*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_INT:{\
+    sint32* dstP = (sint32*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_UINT:{\
+    uint32* dstP = (uint32*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_LONG:{\
+    sint64* dstP = (sint64*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_ULONG:{\
+    uint64* dstP = (uint64*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_FLOAT:{\
+    float* dstP = (float*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+case kPriType_DOUBLE:{\
+    double* dstP = (double*)dstPtr;\
+    *dstP = *srcP;\
+}break;\
+}

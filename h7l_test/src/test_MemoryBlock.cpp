@@ -85,3 +85,4 @@ TEST_CASE("Test_MemoryBlock_share"){
     REQUIRE(mb.hasFlag(kMemFlag_SHARE));
     sd->unref();
 }
+

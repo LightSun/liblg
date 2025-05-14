@@ -21,6 +21,7 @@ public:
         }
         return nullptr;
     }
+    //TODO opt to static array-ref+index
     Type* getPrimitiveType(int priType){
         auto it = m_priTypeMap.find(priType);
         if(it != m_priTypeMap.end()){

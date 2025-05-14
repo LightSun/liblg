@@ -47,7 +47,7 @@ enum FuncOp{
 //0 for non-primitive
 int primitive_get_size(int priType);
 
-static inline bool isIntLike(int priType){
+static inline bool primitive_isIntLike(int priType){
     switch (priType) {
     case kPriType_CHAR:
     case kPriType_UCHAR:
@@ -62,8 +62,7 @@ static inline bool isIntLike(int priType){
     }
     return false;
 }
-
-static inline bool isFloatLike(int priType){
+static inline bool primitive_isFloatLike(int priType){
     return priType == kPriType_FLOAT || priType == kPriType_DOUBLE;
 }
 

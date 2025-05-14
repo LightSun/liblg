@@ -84,6 +84,7 @@ struct Object{
     void addFlag(U32 flag){ flags |= flag;}
     void* getDataPtr(){return mb.getDataPtr();}
     U32 getDataSize();
+    //exclude array
     U32 getBaseDataSize();
     bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
     void reset();
@@ -94,7 +95,7 @@ struct Object{
         }
         return nullptr;
     }
-    Type* asType(){return type;}
+    Type* getType(){return type;}
     //
     void setStringAsData(CString buf){
         mb.setStringAsData(buf);
@@ -108,6 +109,7 @@ struct Object{
     //float-like --> float-like : checkSize enough
     //int -> float or float -> int : ptr -> non-ptr
     bool castPrimitive(int priType);
+    //newPtr: data addr
     bool castPrimitiveTo(int priType, void* newPtr);
 
 private:

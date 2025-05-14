@@ -11,7 +11,7 @@ Value::Value(Object* p, bool weakRef):objPtr(p), weakRef(weakRef){
     }
 }
 Type* Value::getType(){
-    return objPtr ? (Type*)objPtr->clsInfo : nullptr;
+    return objPtr ? objPtr->getType() : nullptr;
 }
 void Value::deinit(){
     if(!weakRef && objPtr){

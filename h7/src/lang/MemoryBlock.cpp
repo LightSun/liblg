@@ -1,6 +1,8 @@
 #include <memory.h>
 #include <stddef.h>
+#include "common/c_common.h"
 #include "src/lang/MemoryBlock.h"
+#include "src/lang/macro.h"
 #include "src/cons.h"
 
 using namespace h7l;
@@ -38,9 +40,7 @@ void* MemoryBlock::getDataPtr(){
         char* dstPtr = (char*)this + offsetof(MemoryBlock, len);
         return dstPtr;
     }
-//    if(hasFlag(kMemFlag_WRAP_PRIMITIVE_PTR)){
-//        return data;
-//    }
+    //kMemFlag_WRAP_PRIMITIVE_PTR
     if(data){
         if(hasFlag(kMemFlag_SHARE)){
             ShareData* sd = (ShareData*)data;
@@ -67,45 +67,21 @@ void MemoryBlock::freeData(){
 }
 void MemoryBlock::initWithWrapPrimitive(int priType, void* ptr){
     char* dstPtr = (char*)this + offsetof(MemoryBlock, len);
-    switch (priType) {
-    case kPriType_CHAR:
-    case kPriType_UCHAR:
-    case kPriType_BOOL:
-    {
-        memcpy(dstPtr, ptr, sizeof(char));
-    }break;
-
-    case kPriType_SHORT:
-    case kPriType_USHORT:
-    {
-        memcpy(dstPtr, ptr, sizeof(short));
-    }break;
-
-    case kPriType_INT:
-    case kPriType_UINT:
-    {
-        memcpy(dstPtr, ptr, sizeof(int));
-    }break;
-
-    case kPriType_LONG:
-    case kPriType_ULONG:
-    {
-        memcpy(dstPtr, ptr, sizeof(long long));
-    }break;
-
-    case kPriType_FLOAT:
-    {
-        memcpy(dstPtr, ptr, sizeof(float));
-    }break;
-
-    case kPriType_DOUBLE:
-    {
-        memcpy(dstPtr, ptr, sizeof(double));
-    }break;
-
-    default:
-        MED_ASSERT_X(false, "wrong priType = " << priType);
-    }
+    initWithWrapPrimitive0(priType, ptr, dstPtr);
+}
+void MemoryBlock::initWithWrapPrimitiveWithRawAddr(int priType, void* ptr){
+    char* dstPtr = (char*)getDataPtr();
+    initWithWrapPrimitive0(priType, ptr, dstPtr);
+}
+void MemoryBlock::initWithWrapPrimitiveWithRawAddr2(int priType, void* srcPtr){
+    char* dstPtr = (char*)getDataPtr();
+    castPrimitiveValue(offset, priType, srcPtr, dstPtr);
+    offset = priType;
+    flags = kMemFlag_WRAP_PRIMITIVE;
+}
+void MemoryBlock::initWithWrapPrimitive2(int priType, void* srcPtr){
+    char* dstPtr = (char*)this + offsetof(MemoryBlock, len);
+    castPrimitiveValue(offset, priType, srcPtr, dstPtr);
     offset = priType;
     flags = kMemFlag_WRAP_PRIMITIVE;
 }
@@ -113,6 +89,12 @@ void MemoryBlock::initWithWrapPrimitivePtr(int priType, void* ptr){
     data = ptr;
     offset = priType;
     flags = kMemFlag_WRAP_PRIMITIVE_PTR;
+}
+void MemoryBlock::initWithWrapPrimitivePtr(int priType, void* srcPtr, void* dstPtr){
+    castPrimitiveValue(offset, priType, srcPtr, dstPtr);
+    data = dstPtr;
+    flags = kMemFlag_WRAP_PRIMITIVE_PTR;
+    offset = priType;
 }
 void MemoryBlock::initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr){
     data = ptr;
@@ -166,4 +148,114 @@ void MemoryBlock::setStringAsData(CString buf){
     this->cap = cap;
     this->offset = 0;
     this->flags = kMemFlag_FREE;
+}
+//----------------------------------
+//----------------------------------
+void MemoryBlock::initWithWrapPrimitive0(int priType, void* ptr, void* _dstPtr){
+    char* dstPtr = (char*)_dstPtr;
+    switch (priType) {
+    case kPriType_CHAR:
+    case kPriType_UCHAR:
+    case kPriType_BOOL:
+    {
+        memcpy(dstPtr, ptr, sizeof(char));
+    }break;
+
+    case kPriType_SHORT:
+    case kPriType_USHORT:
+    {
+        memcpy(dstPtr, ptr, sizeof(short));
+    }break;
+
+    case kPriType_INT:
+    case kPriType_UINT:
+    {
+        memcpy(dstPtr, ptr, sizeof(int));
+    }break;
+
+    case kPriType_LONG:
+    case kPriType_ULONG:
+    {
+        memcpy(dstPtr, ptr, sizeof(long long));
+    }break;
+
+    case kPriType_FLOAT:
+    {
+        memcpy(dstPtr, ptr, sizeof(float));
+    }break;
+
+    case kPriType_DOUBLE:
+    {
+        memcpy(dstPtr, ptr, sizeof(double));
+    }break;
+
+    default:
+        MED_ASSERT_X(false, "wrong priType = " << priType);
+    }
+    offset = priType;
+    flags = kMemFlag_WRAP_PRIMITIVE;
+}
+void MemoryBlock::castPrimitiveValue(int srcPriType, int dstPriType,
+                                         void* srcPtr, void* dstPtr){
+    switch (srcPriType) {
+    case kPriType_CHAR:
+    case kPriType_BOOL:
+    {
+        char* srcP = (char*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_UCHAR:{
+        uint8* srcP = (uint8*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_SHORT:{
+        sint16* srcP = (sint16*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_USHORT:
+    {
+        uint16* srcP = (uint16*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_INT:
+    {
+        sint32* srcP = (sint32*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+    case kPriType_UINT:
+    {
+        uint32* srcP = (uint32*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_LONG:
+    {
+        sint64* srcP = (sint64*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+    case kPriType_ULONG:
+    {
+        uint64* srcP = (uint64*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_FLOAT:
+    {
+        float* srcP = (float*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    case kPriType_DOUBLE:
+    {
+        double* srcP = (double*)srcPtr;
+        H7L_PRIMITIVE_APPLY_VALUE(srcP, dstPtr, dstPriType);
+    }break;
+
+    default:
+        MED_ASSERT_X(false, "wrong priType = " << srcPriType);
+    }
 }

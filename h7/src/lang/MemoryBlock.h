@@ -60,6 +60,7 @@ struct MemoryBlock{
 
     void setStringAsData(CString buf);
     void freeData();
+    bool isSharedData()const{ return hasFlag(kMemFlag_SHARE);}
 
     //-1 for non-primitive
     int getPrimitiveType()const;
@@ -67,8 +68,14 @@ struct MemoryBlock{
     bool isPrimitivePtr()const {return hasFlag(kMemFlag_WRAP_PRIMITIVE_PTR);}
     //false for non-primitive
     bool getPrimitiveValue(void* ptr, int* typeSize = nullptr);
+    //direct
     void initWithWrapPrimitive(int priType, void* ptr);
+    void initWithWrapPrimitive2(int priType, void* srcPtr);
+    //direct
+    void initWithWrapPrimitiveWithRawAddr(int priType, void* ptr);
+    void initWithWrapPrimitiveWithRawAddr2(int priType, void* ptr);
     void initWithWrapPrimitivePtr(int priType, void* ptr);
+    void initWithWrapPrimitivePtr(int priType, void* srcPtr, void* dstPtr);
     void initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr);
 
     _H7L_MEM_GET_PRI_FUNC(char, Char)
@@ -91,5 +98,9 @@ struct MemoryBlock{
     void reset(){
         memset(this, 0, sizeof(MemoryBlock));
     }
+
+private:
+    void initWithWrapPrimitive0(int priType, void* ptr, void* _dstPtr);
+    static void castPrimitiveValue(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
 };
 }
