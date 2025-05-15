@@ -29,5 +29,19 @@ struct Value {
     Value& operator=(const Value& v);
 };
 
+struct ValueHolder{
+    std::unique_ptr<Value> ptr;
+
+    ValueHolder(Object* p, bool weakRef){
+        ptr = std::make_unique<Value>(p, weakRef);
+    }
+    ~ValueHolder(){
+        ptr->deinit();
+    }
+    Value* get(){
+        return ptr.get();
+    }
+};
+
 }
 

@@ -9,6 +9,7 @@ namespace h7l {
 struct Value;
 struct Type;
 struct RuntimeContext;
+class Scope;
 
 struct Type{
     String id;
@@ -46,6 +47,8 @@ struct Type{
         }
         return false;
     }
+    //int callCompare(Scope* scope,Value* v1, Value* v2);
+
     bool isPrimetiveType()const{return priType != kPriType_NONE;}
 
 public:

@@ -173,45 +173,9 @@ bool MemoryBlock::castPrimitiveTo(int priType, void* newPtr){
     initWithWrapPrimitivePtr(priType, buf, newPtr);
     return true;
 }
-bool MemoryBlock::isPrimitiveEquals(MemoryBlock& o){
-    auto t1 = getPrimitiveType();
-    auto t2 = o.getPrimitiveType();
-    if(t1 == t2){
-        if(primitive_isIntLike(t1)){
-            void * d1 = getDataPtr();
-            void * d2 = o.getDataPtr();
-            return memcmp(d1, d2, primitive_get_size(t1)) == 0;
-        }else if(t1 == kPriType_FLOAT){
-            float* d1 = (float*)getDataPtr();
-            float* d2 = (float*)o.getDataPtr();
-            return IsAlmostEqual(*d1, *d2);
-        }else if(t1 == kPriType_DOUBLE){
-            double* d1 = (double*)getDataPtr();
-            double* d2 = (double*)o.getDataPtr();
-            return IsAlmostEqual(*d1, *d2);
-        }else{
-            MED_ASSERT_X(false, "isPrimitiveEquals >> can't reach");
-        }
-    }
-    auto size1 = primitive_get_size(t1);
-    auto size2 = primitive_get_size(t2);
-    if(primitive_isIntLike(t1)){
-        if(primitive_isIntLike(t2)){
-            if(size1 > size2){
-
-            }
-            else if(size1 == size2){
-                //signed ,unsigned
-
-            }else{
-
-            }
-        }else{
-
-        }
-    }else{
-
-    }
+int MemoryBlock::comparePrimitive(MemoryBlock& o){
+    return primitive_compare(getPrimitiveType(), o.getPrimitiveType(),
+                             getDataPtr(), o.getDataPtr());
 }
 
 void MemoryBlock::setStringAsData(CString buf){

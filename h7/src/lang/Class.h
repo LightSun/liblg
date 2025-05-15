@@ -61,6 +61,7 @@ struct MemberInfo{
 };
 
 struct Class: public Type{
+    Class* parent {nullptr};
     List<Field> fields;
     U32 structSize {0};
     U32 arrayDimCnt {0};
@@ -89,6 +90,36 @@ struct Class: public Type{
     void toArrayType(int dim, Class* outC){
         copyTo(outC);
         outC->arrayDimCnt = dim;
+    }
+public:
+    std::vector<Class*> getClasses(){
+        std::vector<Class*> vec;
+        vec.push_back(this);
+        getSuperClasses0(vec);
+        return vec;
+    }
+    std::vector<Class*> getSuperClasses(){
+        std::vector<Class*> vec;
+        getSuperClasses0(vec);
+        return vec;
+    }
+    bool hasSuperClass(Class* super){
+        std::vector<Class*> vec;
+        getSuperClasses0(vec);
+        for(auto& s : vec){
+            if(s == super){
+                return true;
+            }
+        }
+        return false;
+    }
+private:
+    void getSuperClasses0(std::vector<Class*>& vec){
+        Class* p = parent;
+        while ( p != nullptr) {
+            vec.push_back(p);
+            p = p->parent;
+        }
     }
 };
 

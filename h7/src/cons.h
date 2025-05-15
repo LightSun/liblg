@@ -32,7 +32,7 @@ enum PrimiveType{
     kPriType_BOOL,
     kPriType_FLOAT,
     kPriType_DOUBLE,
-    kPriType_MAX = kPriType_DOUBLE,
+    kPriType_MAX,
 };
 
 enum FuncOp{
@@ -43,9 +43,13 @@ enum FuncOp{
     kFuncOp_mod,
     kFuncOp_copy,
     kFuncOp_deepCopy,
+    kFuncOp_compare,
 };
 
 enum CompareResult{
+    kCmpRet_ERROR_ARG    = -4,   //arg error
+    kCmpRet_ERROR_CANT_CMP = -3, //like bool can't cmp to non-bool, primitive cmp to object, t1 and t2 has no extend
+    kCmpRet_NAN  = -2,           //has NAN
     kCmpRet_LESS = -1,
     kCmpRet_EQUALS,
     kCmpRet_GREATER
@@ -54,8 +58,7 @@ enum CompareResult{
 //0 for non-primitive
 int primitive_get_size(int priType);
 void primitive_cast(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
-bool primitive_equals(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
-int primitive_compare(int priType, void* srcPtr, void* dstPtr);
+int primitive_compare(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
 
 static inline bool primitive_isIntLike(int priType){
     switch (priType) {

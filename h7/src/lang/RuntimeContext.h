@@ -14,6 +14,7 @@ struct RuntimeContext: public Object{
 
     VM* vm {nullptr};
     Type* type {nullptr}; //main type
+    Value result;         //function call result
 
     static Class* CLASS;
     static void init(GlobalContext* gc);

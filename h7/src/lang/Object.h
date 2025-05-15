@@ -96,6 +96,7 @@ struct Object{
         return nullptr;
     }
     Type* getType(){return type;}
+    Class* asClass(){return (Class*)type;}
     //
     void setStringAsData(CString buf){
         mb.setStringAsData(buf);
@@ -113,7 +114,27 @@ struct Object{
     bool castPrimitiveTo(int priType, void* newPtr);
 
     //---------------------------
-    bool equals(Object& oth);
+    int compare(Object& oth);
+    bool equals(Object& oth){
+        return compare(oth) == kCmpRet_EQUALS;
+    }
+    bool compareEQ(Object& oth){
+        return compare(oth) == kCmpRet_EQUALS;
+    }
+    bool compareLT(Object& oth){
+        auto ret = compare(oth);
+        return ret == kCmpRet_EQUALS || ret == kCmpRet_LESS ;
+    }
+    bool compareL(Object& oth){
+        return compare(oth) == kCmpRet_LESS ;
+    }
+    bool compareG(Object& oth){
+        return compare(oth) == kCmpRet_GREATER;
+    }
+    bool compareGT(Object& oth){
+        auto ret = compare(oth);
+        return ret == kCmpRet_EQUALS || ret == kCmpRet_GREATER;
+    }
 
 private:
     void init0(Scope* scope, Type* type, ShareData* sd,

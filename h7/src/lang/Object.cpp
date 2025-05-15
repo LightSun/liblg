@@ -1,6 +1,7 @@
 #include <memory.h>
 #include "Object.h"
 #include "src/lang/Scope.h"
+#include "src/lang/RuntimeContext.h"
 
 using namespace h7l;
 
@@ -140,19 +141,40 @@ void Object::init0(Scope* scope, Type* _type, ShareData* sd, std::unique_ptr<Arr
 }
 //
 //------------------------------
-bool Object::equals(Object& oth){
-    auto t1 = getType();
-    auto t2 = oth.getType();
-    //
-    if(t1->isPrimetiveType() && t2->isPrimetiveType()){
-        //t1->priType == t2->priType
-        auto s1 = primitive_get_size(t1->priType);
-        auto s2 = primitive_get_size(t2->priType);
-        if(s1 > s2){
-
+static inline int _cmp_obj_impl(Object& ob1, Object& ob2, bool reverse){
+    RuntimeContext rc(ob1.scope);
+    ValueHolder val(&ob1, false);
+    ValueHolder val2(&ob2, false);
+    if(ob1.getType()->call(kFuncOp_compare, &rc, val.get(), val2.get())){
+        MED_ASSERT_X(rc.result.objPtr, "Object::compare >> cmp with no result.");
+        int ret = rc.result.objPtr->mb.getInt();
+        if(!reverse){
+            return ret;
+        }else{
+            return ret >= kCmpRet_LESS ? -ret : ret;
         }
-    }else if(t1 != t2){
-        return false;
+    }else{
+        return kCmpRet_ERROR_CANT_CMP;
+    }
+}
+int Object::compare(Object& oth){
+    if(type->isPrimetiveType()){
+        if(oth.getType()->isPrimetiveType()){
+            return mb.comparePrimitive(oth.mb);
+        }
+        return kCmpRet_ERROR_CANT_CMP;
+    }else if(oth.getType()->isPrimetiveType()){
+        return kCmpRet_ERROR_CANT_CMP;
+    }else{
+        auto c1 = asClass();
+        auto c2 = oth.asClass();
+        if(c1 == c2 || c1->hasSuperClass(c2)){
+            return _cmp_obj_impl(*this, oth, false);
+        }else if(c2->hasSuperClass(c1)){
+            return _cmp_obj_impl(oth, *this, true);
+        }else{
+            return kCmpRet_ERROR_CANT_CMP;
+        }
     }
 }
 

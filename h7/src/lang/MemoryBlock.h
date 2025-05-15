@@ -5,7 +5,6 @@
 #include "common/common.h"
 #include "common/c_common.h"
 #include "src/cons.h"
-//#include "src/lang/Allocator.h"
 
 #define _H7L_MEM_GET_PRI_FUNC(T, MT)\
     T get##MT(T defVal = -1){\
@@ -22,7 +21,7 @@
         auto pt = getPrimitiveType();\
         if(pt >= 0){\
             auto dstPtr = getDataPtr();\
-            castPrimitiveValue(kPriType_##MT, pt, &val, dstPtr);\
+            primitive_cast(kPriType_##MT, pt, &val, dstPtr);\
         }\
     }
 
@@ -90,7 +89,25 @@ struct MemoryBlock{
 
     bool castPrimitive(int priType);
     bool castPrimitiveTo(int priType, void* newPtr);
-    bool isPrimitiveEquals(MemoryBlock& oth);
+    //compare
+    int comparePrimitive(MemoryBlock& oth);
+    bool isPrimitiveEQ(MemoryBlock& oth){
+        return comparePrimitive(oth) == kCmpRet_EQUALS;
+    }
+    bool isPrimitiveLT(MemoryBlock& oth){
+        auto ret = comparePrimitive(oth);
+        return ret == kCmpRet_EQUALS || ret == kCmpRet_LESS ;
+    }
+    bool isPrimitiveL(MemoryBlock& oth){
+        return comparePrimitive(oth) == kCmpRet_LESS ;
+    }
+    bool isPrimitiveG(MemoryBlock& oth){
+        return comparePrimitive(oth) == kCmpRet_GREATER;
+    }
+    bool isPrimitiveGT(MemoryBlock& oth){
+        auto ret = comparePrimitive(oth);
+        return ret == kCmpRet_EQUALS || ret == kCmpRet_GREATER;
+    }
 
     _H7L_MEM_GET_PRI_FUNC(sint8, Char)
     _H7L_MEM_GET_PRI_FUNC(uint8, UChar)
