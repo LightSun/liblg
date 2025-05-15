@@ -32,6 +32,7 @@ enum PrimiveType{
     kPriType_BOOL,
     kPriType_FLOAT,
     kPriType_DOUBLE,
+    kPriType_MAX = kPriType_DOUBLE,
 };
 
 enum FuncOp{
@@ -44,8 +45,17 @@ enum FuncOp{
     kFuncOp_deepCopy,
 };
 
+enum CompareResult{
+    kCmpRet_LESS = -1,
+    kCmpRet_EQUALS,
+    kCmpRet_GREATER
+};
+
 //0 for non-primitive
 int primitive_get_size(int priType);
+void primitive_cast(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
+bool primitive_equals(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
+int primitive_compare(int priType, void* srcPtr, void* dstPtr);
 
 static inline bool primitive_isIntLike(int priType){
     switch (priType) {
@@ -64,6 +74,17 @@ static inline bool primitive_isIntLike(int priType){
 }
 static inline bool primitive_isFloatLike(int priType){
     return priType == kPriType_FLOAT || priType == kPriType_DOUBLE;
+}
+
+static inline bool primitive_isSigned(int priType){
+    switch (priType) {
+    case kPriType_CHAR:
+    case kPriType_SHORT:
+    case kPriType_INT:
+    case kPriType_LONG:
+        return true;
+    }
+    return false;
 }
 
 }

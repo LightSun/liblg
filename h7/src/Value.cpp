@@ -36,6 +36,9 @@ void Value::toStrongRef(){
         weakRef = false;
     }
 }
+bool Value::operator==(Value& v){
+
+}
 Value& Value::operator=(const Value& v){
     this->weakRef = v.weakRef;
     if(!weakRef){

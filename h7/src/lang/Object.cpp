@@ -84,50 +84,22 @@ Object* Object::subArray(int index){
     return nullptr;
 }
 bool Object::castPrimitive(int priType){
-    MED_ASSERT(scope);
-    auto oldType = mb.getPrimitiveType();
-    if(oldType == priType){
+    if(mb.castPrimitive(priType)){
+        MED_ASSERT(scope);
+        auto gc = scope->getGlobalContext();
+        this->type = gc->getPrimitiveType(priType);
         return true;
     }
-    char buf[sizeof(void*)];
-    int oldSize = 0;
-    if(!mb.getPrimitiveValue(buf, &oldSize)){
-        return false;
-    }
-    auto gc = scope->getGlobalContext();
-    this->type = gc->getPrimitiveType(priType);
-    auto newSize = primitive_get_size(priType);
-    //
-    if(oldSize == newSize){
-        if(primitive_isIntLike(oldType) && primitive_isIntLike(priType)){
-            mb.initWithWrapPrimitiveWithRawAddr(priType, buf);
-        }else{
-            mb.initWithWrapPrimitiveWithRawAddr2(priType, buf);
-        }
-        return true;
-    }
-    mb.freeData();
-
-    mb.initWithWrapPrimitive2(priType, buf);
-    return true;
+    return false;
 }
 bool Object::castPrimitiveTo(int priType, void* newPtr){
-    MED_ASSERT(scope);
-    auto oldType = mb.getPrimitiveType();
-    if(oldType == priType){
+    if(mb.castPrimitiveTo(priType, newPtr)){
+        MED_ASSERT(scope);
+        auto gc = scope->getGlobalContext();
+        this->type = gc->getPrimitiveType(priType);
         return true;
     }
-    char buf[sizeof(void*)];
-    int oldSize = 0;
-    if(!mb.getPrimitiveValue(buf, &oldSize)){
-        return false;
-    }
-    auto gc = scope->getGlobalContext();
-    this->type = gc->getPrimitiveType(priType);
-    //
-    mb.freeData();
-    mb.initWithWrapPrimitivePtr(priType, buf, newPtr);
-    return true;
+    return false;
 }
 //-----------------------
 void Object::init0(Scope* scope, Type* _type, ShareData* sd, std::unique_ptr<ArrayDesc> desc){
@@ -166,5 +138,21 @@ void Object::init0(Scope* scope, Type* _type, ShareData* sd, std::unique_ptr<Arr
         }
     }
 }
+//
+//------------------------------
+bool Object::equals(Object& oth){
+    auto t1 = getType();
+    auto t2 = oth.getType();
+    //
+    if(t1->isPrimetiveType() && t2->isPrimetiveType()){
+        //t1->priType == t2->priType
+        auto s1 = primitive_get_size(t1->priType);
+        auto s2 = primitive_get_size(t2->priType);
+        if(s1 > s2){
 
+        }
+    }else if(t1 != t2){
+        return false;
+    }
+}
 

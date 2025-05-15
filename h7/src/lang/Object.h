@@ -112,6 +112,9 @@ struct Object{
     //newPtr: data addr
     bool castPrimitiveTo(int priType, void* newPtr);
 
+    //---------------------------
+    bool equals(Object& oth);
+
 private:
     void init0(Scope* scope, Type* type, ShareData* sd,
                std::unique_ptr<ArrayDesc> desc);

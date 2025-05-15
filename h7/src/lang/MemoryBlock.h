@@ -88,6 +88,10 @@ struct MemoryBlock{
     void initWithWrapPrimitivePtr(int priType, void* srcPtr, void* dstPtr);
     void initWithWrapPrimitiveSharePtr(int priType, ShareData* ptr);
 
+    bool castPrimitive(int priType);
+    bool castPrimitiveTo(int priType, void* newPtr);
+    bool isPrimitiveEquals(MemoryBlock& oth);
+
     _H7L_MEM_GET_PRI_FUNC(sint8, Char)
     _H7L_MEM_GET_PRI_FUNC(uint8, UChar)
     _H7L_MEM_GET_PRI_FUNC(sint16, Short)
@@ -120,9 +124,9 @@ struct MemoryBlock{
     void reset(){
         memset(this, 0, sizeof(MemoryBlock));
     }
+    //-----------------------------------------
 
 private:
     void initWithWrapPrimitive0(int priType, void* ptr, void* _dstPtr);
-    static void castPrimitiveValue(int srcPriType, int dstPriType, void* srcPtr, void* dstPtr);
 };
 }

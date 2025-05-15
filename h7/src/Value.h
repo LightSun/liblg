@@ -24,6 +24,8 @@ struct Value {
     void toWeakRef();
     void toStrongRef();
 
+    bool operator==(Value& v);
+
     Value& operator=(const Value& v);
 };
 
