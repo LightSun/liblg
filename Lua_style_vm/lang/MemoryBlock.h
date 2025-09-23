@@ -61,16 +61,28 @@ struct MemoryBlock{
 
     void* getDataPtr();
 
+    ShareData* getShareData(){
+        MED_ASSERT(isSharedData());
+        return (ShareData*)data;
+    }
+
     String asString(){
         return String((char*)getDataPtr(), len);
     }
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}
+    void markPrimitive(){ flags = kMemFlag_WRAP_PRIMITIVE;}
 
     void setStringAsData(CString buf);
     void freeData();
     bool isSharedData()const{ return hasFlag(kMemFlag_SHARE);}
 
+    //
+    void refShareData(ShareData* sd){
+        data = sd;
+        sd->ref();
+        flags = kMemFlag_SHARE;
+    }
     //-1 for non-primitive
     int getPrimitiveType()const;
     int getPrimitiveSize()const{ return primitive_get_size(offset);}

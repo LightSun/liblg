@@ -1,5 +1,5 @@
 #include "structs.h"
-#include "common/c_common.h"
+#include "../common/c_common.h"
 
 using namespace h7l;
 

@@ -48,7 +48,19 @@ struct Field{
             shapes = nullptr;
         }
     }
+    int getTotalElementCount(){
+        if(shapes){
+            int c = 1;
+            for(auto& v : *shapes){
+                c *= v;
+            }
+            return c;
+        }
+        return 0;
+    }
     void get(Object* obj, Value* out);
+    void set(Object* obj, Object* val);
+    Object* getCopy(Object* obj);
 };
 
 struct MemberInfo{
@@ -64,7 +76,6 @@ struct Class: public Type{
     Class* parent {nullptr};
     List<Field> fields;
     U32 structSize {0};
-    U32 arrayDimCnt {0};
 
     Class():Type(){
     }
@@ -76,18 +87,14 @@ struct Class: public Type{
 
     void init(GlobalContext* gc, CList<MemberInfo> types, CList<String> names);
 
-    void initArray(int dimCnt){
-        arrayDimCnt = dimCnt;
-    }
-    bool isArrayType()const{
-        return arrayDimCnt > 0;
-    }
-    void copyTo(Class* dst){
-        dst->id = this->id;
-        dst->priType = this->priType;
+    void copyTo(Type* _dst)override{
+        Type::copyTo(_dst);
+        MED_ASSERT(!_dst->isPrimetiveType());
+        //
+        Class* dst = (Class*)(_dst);
+        dst->parent = this->parent;
         dst->fields = this->fields;
         dst->structSize = this->structSize;
-        dst->arrayDimCnt = this->arrayDimCnt;
     }
     void toArrayType(int dim, Class* outC){
         copyTo(outC);

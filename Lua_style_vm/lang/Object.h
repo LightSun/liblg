@@ -15,7 +15,7 @@ struct ArrayDesc{
     List<int> shapes;
     List<int> strides;
     U32 baseSize {0};
-    U32 eleCount {0};
+    U32 eleCount {0}; //total
 
     ArrayDesc(U32 s): baseSize(s){}
 
@@ -54,6 +54,12 @@ struct ArrayDesc{
         outArr.setShape(newShapes);
         return true;
     }
+    void copyTo(ArrayDesc* dst){
+        *dst = *this;
+    }
+
+private:
+    ArrayDesc(){}
 };
 
 struct Object{
@@ -66,8 +72,10 @@ struct Object{
     U32 flags {0};
     std::shared_ptr<ArrayDesc> arrayDesc;
 
-    Object(Scope* scope, Class* clsInfo, CList<int> shapes = {});
-    Object(Scope* scope, Class* clsInfo, std::shared_ptr<ArrayDesc> desc);
+    //clsInfo: base-component-type
+    Object(Scope* scope, int priType, CList<int> shapes = {});
+    Object(Scope* scope, Type* clsInfo, CList<int> shapes = {});
+    Object(Scope* scope, Type* clsInfo, std::shared_ptr<ArrayDesc> desc);
     Object(){}
     ~Object();
 
@@ -85,20 +93,22 @@ struct Object{
     bool hasFlag(U32 flag)const{ return (flags & flag) == flag;}
     void addFlag(U32 flag){ flags |= flag;}
     void* getDataPtr(){return mb.getDataPtr();}
+    int getTotalElementCount()const{
+        return arrayDesc ? arrayDesc->eleCount : 0;
+    }
     U32 getDataSize();
     //exclude array
     U32 getBaseDataSize();
-    bool isArray(){return arrayDesc && arrayDesc->eleCount > 0;}
+    bool isArray()const{return arrayDesc && arrayDesc->eleCount > 0;}
     void reset();
 
     Class* getClass()const{
-        if(mb.getPrimitiveType() == -1){
+        if(!type->isPrimetiveType()){
             return (Class*)type;
         }
         return nullptr;
     }
     Type* getType(){return type;}
-    Class* asClass(){return (Class*)type;}
     //
     void setStringAsData(CString buf){
         mb.setStringAsData(buf);
@@ -139,11 +149,12 @@ struct Object{
         return ret == kCmpRet_EQUALS || ret == kCmpRet_GREATER;
     }
     Object* copy();
-    //Object* copyDeep();
+    Object* copyDeep();
 
 private:
     void init0(Scope* scope, Type* type, ShareData* sd,
                std::shared_ptr<ArrayDesc> desc);
+    void unrefChildObject();
 };
 
 struct ObjectDeleter{

@@ -5,32 +5,63 @@
 
 using namespace h7l;
 
-Object::Object(Scope* scope, Class* clsInfo, CList<int> shapes){
+//
+Object::Object(Scope* scope, int priType, CList<int> shapes):
+    Object(scope, scope->getGlobalContext()->getPrimitiveType(priType), shapes){
+}
+Object::Object(Scope* scope, Type* clsInfo, CList<int> shapes){
     MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
-    std::unique_ptr<ArrayDesc> desc;
+    std::shared_ptr<ArrayDesc> desc;
     if(!shapes.empty()){
-        desc = std::make_unique<ArrayDesc>(clsInfo->structSize);
+        if(clsInfo->isPrimetiveType()){
+            desc = std::make_shared<ArrayDesc>(primitive_get_size(clsInfo->priType));
+        }else{
+            desc = std::make_shared<ArrayDesc>(clsInfo->asClass()->structSize);
+        }
         desc->setShape(shapes);
     }
-    init0(scope, clsInfo, nullptr, std::move(desc));
+    init0(scope, clsInfo, nullptr, desc);
 }
-Object::Object(Scope* scope, Class* clsInfo, std::shared_ptr<ArrayDesc> desc){
+Object::Object(Scope* scope, Type* clsInfo, std::shared_ptr<ArrayDesc> desc){
     MED_ASSERT_X(!clsInfo->isArrayType(), "clsInfo must not be array type.");
-    init0(scope, clsInfo, nullptr, std::move(desc));
+    init0(scope, clsInfo, nullptr, desc);
 }
 
 Object::~Object(){
     //fprintf(stderr,"Object::~Object\n");
     unref();
 }
+void Object::unrefChildObject(){
+    char* ptr0 = (char*)getDataPtr();
+    auto cls = type->asClass();
+    if(!type->isPrimetiveType()){
+        if(isArray()){
+            int c = getTotalElementCount();
+            for(int i = 0 ; i < c ; ++i){
+                Object* obj = (Object*)(ptr0 + i * sizeof(void*));
+                obj->unref();
+            }
+        }else{
+            for(int i = 0 ; i < cls->getFieldCount() ; ++i){
+                auto& f = cls->getFieldAt(i);
+                if(!f.type->isPrimetiveType()){
+                    Object* obj = (Object*)(ptr0 + f.offset);
+                    obj->unref();
+                }
+            }
+        }
+    }
+}
 Object* Object::newPrimitive(Scope* scope, int priType){
     Object* obj = new Object();
     obj->scope = scope;
     obj->type = scope->getGlobalContext()->getPrimitiveType(priType);
+    obj->mb.markPrimitive();
     return obj;
 }
 void Object::unref(){
     if(h_atomic_add(&_ref, -1) == 1){
+        unrefChildObject();
         mb.freeData();
         delete this;
     }
@@ -43,6 +74,9 @@ U32 Object::getDataSize(){
         }
         return clsInfo->structSize;
     }else{
+        if(arrayDesc){
+            return arrayDesc->eleCount * mb.getPrimitiveSize();
+        }
         return mb.getPrimitiveSize();
     }
 }
@@ -109,6 +143,7 @@ bool Object::castPrimitiveTo(int priType, void* newPtr){
     return false;
 }
 //-----------------------
+//for array. _type must be component-type
 void Object::init0(Scope* scope, Type* _type, ShareData* sd,
                    std::shared_ptr<ArrayDesc> desc){
     MED_ASSERT_X(_type, "type must be valid.");
@@ -128,10 +163,17 @@ void Object::init0(Scope* scope, Type* _type, ShareData* sd,
         U32 actDataSize;
         U32 alignSize;
         actDataSize = arrayDesc->eleCount * unitSize;
-        if(_type->isPrimetiveType()){
+        if(!_type->isPrimetiveType()){
             alignSize = actDataSize;
         }else{
-            alignSize = sizeof(void*) - actDataSize % sizeof(void*) + actDataSize;
+            //28 ->
+            const int ptrSize = sizeof (void*);
+            int left = actDataSize % ptrSize;
+            if(left == 0){
+                alignSize = actDataSize;
+            }else{
+                alignSize = actDataSize + ptrSize - left;
+            }
         }
         if(sd == nullptr){
             sd = ShareData::New(alignSize);
@@ -143,6 +185,8 @@ void Object::init0(Scope* scope, Type* _type, ShareData* sd,
         this->arrayDesc = nullptr;
         if(cls){
             mb.initWithStructSize(cls->structSize);
+        }else{
+            mb.markPrimitive();
         }
     }
 }
@@ -183,8 +227,8 @@ int Object::compare(Object& oth){
     }else if(oth.getType()->isPrimetiveType()){
         return kCmpRet_ERROR_CANT_CMP;
     }else{
-        auto c1 = asClass();
-        auto c2 = oth.asClass();
+        auto c1 = type->asClass();
+        auto c2 = oth.type->asClass();
         if(c1 == c2 || c1->hasSuperClass(c2)){
             return _cmp_obj_impl(*this, oth, false);
         }else if(c2->hasSuperClass(c1)){
@@ -194,6 +238,8 @@ int Object::compare(Object& oth){
         }
     }
 }
+//-----------------
+
 Object* Object::copy(){
     auto tobj = std::make_unique<Object>();
     tobj->scope = this->scope;
@@ -203,4 +249,41 @@ Object* Object::copy(){
     mb.copyTo(&tobj->mb);
     return tobj.release();
 }
+Object* Object::copyDeep(){
+    auto tobj = std::make_unique<Object>(scope, type, arrayDesc);
+    //
+    char* srcPtr = (char*)getDataPtr();
+    char* dstPtr = (char*)tobj->getDataPtr();
+    auto cls = type->asClass();
 
+    if(isArray()){
+        if(!type->isPrimetiveType()){
+            int c = getTotalElementCount();
+            for(int i = 0 ; i < c ; ++i){
+                Object* src = (Object*)(srcPtr + i * sizeof(void*));
+                void* dst = (dstPtr + i * sizeof(void*));
+                dst = src->copyDeep();
+            }
+        }else{
+            auto dataSize = getDataSize();
+            memcpy(dstPtr, srcPtr, dataSize);
+        }
+    }else if(type->isPrimetiveType()){
+        auto dataSize = getDataSize();
+        memcpy(dstPtr, srcPtr, dataSize);
+    }else{
+        for(int i = 0 ; i < cls->getFieldCount() ; ++i){
+            auto& f = cls->getFieldAt(i);
+            if(!f.type->isPrimetiveType()){
+                Object* src = (Object*)(srcPtr + f.offset);
+                void* dst = (dstPtr + f.offset);
+                dst = src->copy();
+            }else{
+                auto srcPtr1 = (srcPtr + f.offset);
+                auto dstPtr1 = (dstPtr + f.offset);
+                memcpy(dstPtr1, srcPtr1, primitive_get_size(f.type->priType));
+            }
+        }
+    }
+    return tobj.release();
+}

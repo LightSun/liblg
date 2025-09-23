@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "common/c_common.h"
+#include "../common/c_common.h"
 
 CPP_START
 

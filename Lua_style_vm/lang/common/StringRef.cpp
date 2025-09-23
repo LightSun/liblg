@@ -1,6 +1,6 @@
 
 #include "StringRef.h"
-#include "utils/hash.h"
+#include "../utils/hash.h"
 
 using namespace h7;
 

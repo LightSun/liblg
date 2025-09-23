@@ -202,13 +202,12 @@ void MemoryBlock::copyTo(MemoryBlock* other){
     //other->freeData(); ?
     if(hasFlag(kMemFlag_SHARE)){
         ShareData* sd = (ShareData*)data;
-        sd->ref();
-        other->data = this->data;
+        other->refShareData(sd);
         //
         other->len = this->len;
         other->cap = this->cap;
         other->offset = this->offset;
-        other->flags = this->flags;
+        //other->flags = this->flags;
     }else if(hasFlag(kMemFlag_FREE)){
         other->data = malloc(cap);
         memcpy(other->data, data, cap);

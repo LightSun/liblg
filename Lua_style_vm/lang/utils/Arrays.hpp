@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
-#include "utils/Numbers.hpp"
+#include "Numbers.hpp"
 
 namespace h7l {
 

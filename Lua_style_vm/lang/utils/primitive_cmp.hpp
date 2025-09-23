@@ -2,8 +2,8 @@
 
 #include <type_traits>
 #include <cmath>
-#include "src/cons.h"
-#include "common/c_common.h"
+#include "../cons.h"
+#include "../common/c_common.h"
 
 namespace h7l {
 

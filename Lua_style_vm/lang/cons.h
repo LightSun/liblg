@@ -34,16 +34,16 @@ enum PrimiveType{
     kPriType_MAX,
 };
 
-enum FuncOp{
-    kFuncOp_add,
-    kFuncOp_sub,
-    kFuncOp_multi,
-    kFuncOp_divide,
-    kFuncOp_mod,
-    kFuncOp_copy,
-    kFuncOp_deepCopy,
-    kFuncOp_compare,
-};
+//enum FuncOp{
+//    kFuncOp_add,
+//    kFuncOp_sub,
+//    kFuncOp_multi,
+//    kFuncOp_divide,
+//    kFuncOp_mod,
+//    kFuncOp_copy,
+//    kFuncOp_deepCopy,
+//    kFuncOp_compare,
+//};
 
 enum CompareResult{
     kCmpRet_ERROR_ARG    = -4,   //arg error

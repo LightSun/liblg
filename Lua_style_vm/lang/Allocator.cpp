@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "src/lang/Allocator.h"
+#include "Allocator.h"
 
 namespace h7l {
 
