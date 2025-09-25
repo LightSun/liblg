@@ -16,13 +16,16 @@ struct Value {
     Value(){}
     Value(Object* p, bool weakRef);
 
+    Value(Value&& val);
+    Value(const Value& val);
+    ~Value();
+
     static Value makeStrongDirect(Object* obj){
         Value val;
         val.objPtr = obj;
         val.weakRef = false;
         return val;
     }
-
     Type* getType();
     void deinit();
 
@@ -32,8 +35,8 @@ struct Value {
     void toStrongRef();
 
     bool operator==(Value& v);
-
     Value& operator=(const Value& v);
+    Value& operator=(Value&& v);
 };
 
 struct ValueHolder{

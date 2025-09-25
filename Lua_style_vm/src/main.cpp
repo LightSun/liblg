@@ -51,7 +51,8 @@ struct Table {
 };
 
 // 值类型：可以存储数字、字符串、布尔值、表、函数或nil
-using Value = std::variant<double, std::string, bool, std::shared_ptr<Table>, std::function<void()>, std::nullptr_t>;
+using Value = std::variant<double, std::string, bool, std::shared_ptr<Table>,
+                           std::function<void()>, std::nullptr_t>;
 
 enum OpCode {
     LOADK,      // 将常量加载到寄存器
@@ -76,7 +77,7 @@ enum OpCode {
     PRINT,      // 打印寄存器值
     HALT        // 停止虚拟机
 };
-// 指令结构
+// 指令结构: opcode, dstReg. op1, op2
 struct Instruction {
     OpCode opcode;
     int a;  // 通常用于目标寄存器
@@ -87,7 +88,7 @@ struct Instruction {
         : opcode(op), a(a), b(b), c(c) {}
 };
 
-// 函数原型
+// 函数原型: 指令，常量，参数个数，寄存器个数
 struct FunctionProto {
     std::vector<Instruction> instructions;
     std::vector<Value> constants;
@@ -520,11 +521,18 @@ public:
 static void test_string();
 static void test_table();
 static void test_mix();
+static void test_loop();
+extern void main_demo2();
 
 int main() {
-    test_string();
+    //test_string();
+    //test_table();
+    //test_loop();
+    main_demo2();
     return 0;
 }
+
+using String = std::string;
 
 static void test_string(){
     // 示例1：字符串操作
@@ -540,7 +548,9 @@ static void test_string(){
     };
 
     std::vector<Value> stringConstants = {
-        "Hello", " ", "World"
+        String("Hello"),
+        String(" "),
+        String("World")
     };
 
     auto stringFunc = std::make_shared<FunctionProto>(stringInstructions, stringConstants, 0, 5);
@@ -583,7 +593,13 @@ static void test_table(){
     };
 
     std::vector<Value> tableConstants = {
-        "name", "Alice", "age", 25.0, 1.0, "first", 1.0
+        String("name"),
+        String("Alice"),
+        String("age"),
+        25.0,
+        1.0,
+        String("first"),
+        1.0
     };
 
     auto tableFunc = std::make_shared<FunctionProto>(tableInstructions, tableConstants, 0, 13);
@@ -611,10 +627,67 @@ static void test_mix(){
     };
 
     std::vector<Value> mixedConstants = {
-        "The answer is: ", 42.0, 10.0, 3.0
+        String("The answer is: "),
+        42.0, 10.0, 3.0
     };
 
     auto mixedFunc = std::make_shared<FunctionProto>(mixedInstructions, mixedConstants, 0, 6);
     VM vm3;
     vm3.execute(mixedFunc);
+}
+static void test_loop(){
+    // 示例5：循环调用Demo - 计算斐波那契数列
+    std::cout << "=== 循环调用Demo：斐波那契数列 ===" << std::endl;
+
+    // 计算斐波那契数列的前10个数
+    // 伪代码：
+    // a = 0
+    // b = 1
+    // for i = 1 to 10 do
+    //   print(a)
+    //   next = a + b
+    //   a = b
+    //   b = next
+    // end
+
+    std::vector<Instruction> loopInstructions = {
+        // 初始化变量
+        {LOADK, 0, 0, 0},   // R0 = a = 0
+        {LOADK, 1, 1, 0},   // R1 = b = 1
+        {LOADK, 2, 2, 0},   // R2 = i = 1 (计数器)
+        {LOADK, 3, 3, 0},   // R3 = 10 (循环上限)
+        {LOADK, 4, 1, 0},   // R4 = 1 (增量)
+
+        // 循环开始
+        {LE, 5, 2, 3},      // R5 = (i <= 10)
+        {JMPNOT, 16, 5, 0}, // 如果 i > 10，跳转到结束 (指令16)
+
+        // 循环体
+        {PRINT, 0, 0, 0},   // 打印 a
+        {ADD, 6, 0, 1},     // R6 = a + b (next)
+        {MOVE, 0, 1, 0},    // a = b
+        {MOVE, 1, 6, 0},    // b = next
+        {ADD, 2, 2, 4},     // i = i + 1
+        {JMP, 5, 0, 0},     // 跳回循环开始 (指令5)
+
+        // 循环结束
+        {LOADK, 7, 4, 0},   // R7 = "Done!"
+        {PRINT, 7, 0, 0},   // 打印 "Done!"
+        {HALT, 0, 0, 0}     // 停止
+    };
+
+    std::vector<Value> loopConstants = {
+        Value(0.0),        // 0: a的初始值
+        Value(1.0),        // 1: b的初始值和增量
+        Value(1.0),        // 2: i的初始值
+        Value(10.0),       // 3: 循环上限
+        Value(std::string("Done!"))  // 4: 完成消息
+    };
+
+    auto loopFunc = std::make_shared<FunctionProto>(loopInstructions,
+                                                    loopConstants, 0, 8);
+    VM vm5;
+    vm5.execute(loopFunc);
+
+    std::cout << std::endl;
 }

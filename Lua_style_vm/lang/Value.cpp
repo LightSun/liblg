@@ -10,6 +10,9 @@ Value::Value(Object* p, bool weakRef):objPtr(p), weakRef(weakRef){
         p->ref();
     }
 }
+Value::~Value(){
+    deinit();
+}
 Type* Value::getType(){
     return objPtr ? objPtr->getType() : nullptr;
 }
@@ -36,14 +39,36 @@ void Value::toStrongRef(){
         weakRef = false;
     }
 }
+Value::Value(Value&& val){
+    this->objPtr = val.objPtr;
+    this->weakRef = val.weakRef;
+    if(!weakRef){
+        objPtr->ref();
+    }
+}
+Value::Value(const Value& val){
+    this->objPtr = val.objPtr;
+    this->weakRef = val.weakRef;
+    if(!weakRef){
+        objPtr->ref();
+    }
+}
 bool Value::operator==(Value& v){
     return objPtr->compareEQ(*v.objPtr);
 }
 Value& Value::operator=(const Value& v){
     this->weakRef = v.weakRef;
+    this->objPtr = v.objPtr;
     if(!weakRef){
         objPtr->ref();
     }
+    return *this;
+}
+Value& Value::operator=(Value&& v){
+    this->weakRef = v.weakRef;
     this->objPtr = v.objPtr;
+    if(!weakRef){
+        objPtr->ref();
+    }
     return *this;
 }
