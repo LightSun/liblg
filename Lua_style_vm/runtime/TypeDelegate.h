@@ -8,6 +8,8 @@ class ITypeDelegate{
 
 public:
 
+    virtual ~ITypeDelegate(){}
+
     virtual Value add(Value& v1, Value& v2) = 0;
 
     virtual Value concat(Value& v1, Value& v2) = 0;

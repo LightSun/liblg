@@ -13,47 +13,59 @@
 #include <cmath>
 
 #include "runtime/VM.h"
+#include "runtime/context.h"
 
 namespace demo21{
 
 using namespace h7l::runtime;
 
 // C库函数示例
-void printNumber(VM& vm) {
-    Value arg = vm.getRegister(0); // 获取第一个参数
+Value printNumber(VM* vm) {
+    Value& arg = vm->getRegister(0); // 获取第一个参数
     std::cout << "C function printNumber: " << arg << std::endl;
+    return Value();
 }
 
-void squareRoot(VM& vm) {
-    Value arg = vm.getRegister(0);
+Value squareRoot(VM* vm) {
+    Value& arg = vm->getRegister(0);
     if(arg.canCastToNumber()){
         auto num = arg.getAsNumber();
-        vm.setRegister(0, sqrt(num));
+        vm->setRegister(0, sqrt(num));
     }else{
         //wrong
-        vm.setRegister(0, Value(kType_NULL, nullptr));
+        vm->setRegister(0, Value(kType_NULL, nullptr));
     }
+    return Value();
 }
 
-void addNumbers(VM& vm) {
-    Value arg1 = vm.getRegister(0);
-    Value arg2 = vm.getRegister(1);
+Value addNumbers(VM* vm) {
+    Value& arg1 = vm->getRegister(0);
+    Value& arg2 = vm->getRegister(1);
 
     if(arg1.canCastToNumber() && arg2.canCastToNumber()){
         auto num1 = arg1.getAsNumber();
         auto num2 = arg2.getAsNumber();
-        vm.setRegister(0, num1 + num2);
+        vm->setRegister(0, num1 + num2);
     }else{
         //wrong
-        vm.setRegister(0, Value(kType_NULL, nullptr));
+        vm->setRegister(0, Value(kType_NULL, nullptr));
     }
+    return Value();
+}
+
+//static Value makeCFunc(std::function<Value(VM*)> func){
+//    return Value(kType_CFUNCTION, new CFunction(func), false);
+//}
+typedef Value (*CFUNC)(VM*);
+static Value makeCFunc(CFUNC func){
+    return Value(kType_CFUNCTION, new CFunction(func), false);
 }
 
 }
-
 // 示例使用
 void main_demo21() {
-    using namespace h7l::runtime;
+    //using namespace h7l::runtime;
+    using namespace demo21;
     using VM = h7l::runtime::VM;
     // 示例1：嵌套函数和闭包Demo - 修复版本
     std::cout << "=== 嵌套函数和闭包Demo ===" << std::endl;
@@ -134,9 +146,9 @@ void main_demo21() {
     VM vm2;
     // 将C函数放入常量表
     auto cFuncProto = std::const_pointer_cast<FunctionProto>(cFunctionDemo);
-    cFuncProto->constants[3] = Value(std::function<void(VM&)>(printNumber));
-    cFuncProto->constants[4] = Value(std::function<void(VM&)>(squareRoot));
-    cFuncProto->constants[6] = Value(std::function<void(VM&)>(addNumbers));
+    cFuncProto->constants[3] = makeCFunc(printNumber);
+    cFuncProto->constants[4] = makeCFunc(squareRoot);
+    cFuncProto->constants[6] = makeCFunc(addNumbers);
 
     vm2.execute(cFunctionDemo);
 
@@ -191,7 +203,7 @@ void main_demo21() {
             {RETURN, 0, 0, 0}       // 返回创建的运算器
         },
         std::vector<Value>{
-            Value(std::string("add")) // 0: "add"
+            Value::makeString("add") // 0: "add"
         },
         std::vector<std::shared_ptr<FunctionProto>>{adderProto, multiplierProto},
         2, 6, 0 // 2个参数, 6个寄存器, 0个upvalue
@@ -226,10 +238,10 @@ void main_demo21() {
             {HALT, 0, 0, 0}         // 停止
         },
         std::vector<Value>{
-            Value(std::string("add")),      // 0: "add"
+            Value::makeString("add"),      // 0: "add"
             Value(5.0),                     // 1: 5
             Value(10.0),                    // 2: 10
-            Value(std::string("multiply")), // 3: "multiply"
+            Value::makeString("multiply"), // 3: "multiply"
             Value(3.0),                     // 4: 3
             Value(7.0)                      // 5: 7
         },

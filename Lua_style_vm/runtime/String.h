@@ -8,7 +8,7 @@
 #include <vector>
 #include <future>
 
-#include "runtime/Value.h"
+#include "runtime/IObjectType.h"
 
 namespace h7l { namespace runtime {
 

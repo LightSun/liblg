@@ -6,6 +6,7 @@
 #include <vector>
 #include <atomic>
 #include <memory>
+#include <functional>
 
 #include "runtime/Instruction.h"
 #include "runtime/Value.h"
@@ -101,8 +102,10 @@ class VM;
 class CFunction: public BaseObjectType<CFunction>{
 public:
     std::function<Value(VM*)> func;
+    using CFUNC = Value(*)(VM*);
 
     CFunction(std::function<Value(VM*)> func):func(func){}
+    CFunction(CFUNC func):func(func){}
 
     void printTo(std::ostream& ss)override{
         ss << "CFunction@"<< this;

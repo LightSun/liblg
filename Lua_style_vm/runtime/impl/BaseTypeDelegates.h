@@ -1,0 +1,74 @@
+#pragma once
+
+#include "runtime/TypeDelegate.h"
+
+#define PRITIVE_TypeDelegate_IMPL(fn)\
+Value concat(Value& /*v1*/, Value& /*v2*/)override{\
+    MED_ASSERT(false);\
+    return Value();\
+}\
+Value add(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn + v2.base.fn);\
+}\
+Value sub(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn - v2.base.fn);\
+}\
+Value mul(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn * v2.base.fn);\
+}\
+Value div(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn / v2.base.fn);\
+}\
+Value equals(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn == v2.base.fn);\
+}\
+Value lessThan(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn < v2.base.fn);\
+}\
+Value lessEquals(Value& v1, Value& v2)override{\
+    return Value(v1.base.fn <= v2.base.fn);\
+}
+
+
+namespace h7l { namespace runtime {
+
+class CharTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(s8);
+};
+
+class UCharTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(u8);
+};
+
+class ShortTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(s16);
+};
+
+class UShortTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(u16);
+};
+
+class IntTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(s32);
+};
+
+class UIntTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(u32);
+};
+
+class LongTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(s64);
+};
+class ULongTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(u64);
+};
+
+}}
