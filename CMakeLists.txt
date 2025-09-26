@@ -14,6 +14,7 @@ endif(MSVC)
 
 #include_directories(./)
 #include_directories(h7/)
+include_directories(Lua_style_vm/)
 
 #add_subdirectory(h7)
 #add_subdirectory(h7l_test)
