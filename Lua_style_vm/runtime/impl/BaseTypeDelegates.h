@@ -74,4 +74,14 @@ public:
     PRITIVE_TypeDelegate_IMPL(u64);
 };
 
+class FloatTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(f32);
+};
+
+class DoubleTypeDelegate: public ITypeDelegate{
+public:
+    PRITIVE_TypeDelegate_IMPL(f64);
+};
+
 }}

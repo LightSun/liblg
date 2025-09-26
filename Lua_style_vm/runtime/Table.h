@@ -16,17 +16,19 @@ namespace h7l { namespace runtime {
 struct Table: public BaseObjectType<Table>
 {
     std::unordered_map<std::string, Value> fields;
-    std::vector<Value> arrayPart;
+    std::map<int, Value> array;
 
     Value* get(const std::string& key) {
-        if (fields.find(key) != fields.end()) {
-            return &fields[key];
+        auto it = fields.find(key);
+        if (it != fields.end()) {
+            return &it->second;
         }
         return nullptr;
     }
     Value* get(size_t index) {
-        if (index < arrayPart.size()) {
-            return &arrayPart[index];
+        auto it = array.find(index);
+        if (it != array.end()) {
+            return &it->second;
         }
         return nullptr;
     }
@@ -34,13 +36,27 @@ struct Table: public BaseObjectType<Table>
         fields[key] = value;
     }
     void set(size_t index, const Value& value) {
-        arrayPart[index] = value;
+        array[index] = value;
     }
     bool contains(const std::string& key) {
         return fields.find(key) != fields.end();
     }
     bool contains(size_t index) {
-        return index >=0 && index < arrayPart.size();
+        return array.find(index) != array.end();
+    }
+    Table* copy(){
+        Table* tab = new Table();
+        tab->fields = this->fields;
+        tab->array = this->array;
+        return tab;
+    }
+    void removeSame(Table* other){
+        for(auto& [k,v]: other->fields){
+            fields.erase(k);
+        }
+        for(auto& [k,v]: other->array){
+            array.erase(k);
+        }
     }
     Table* merge(Table* other){
         Table* tab = new Table();
@@ -49,20 +65,17 @@ struct Table: public BaseObjectType<Table>
         return tab;
     }
     void mergeTo(Table* other){
-        if(arrayPart.empty()){
-            for(auto& [k,v] : fields){
-                other->set(k, v);
-            }
-        }else{
-            auto& arr = other->arrayPart;
-            arr.reserve(arr.size() + arrayPart.size());
-            arr.insert(arr.end(), arrayPart.begin(), arrayPart.end());
+        for(auto& [k,v] : fields){
+            other->set(k, v);
+        }
+        for(auto& [k,v] : array){
+            other->set(k, v);
         }
     }
 
     //---------------
     void printTo(std::ostream& ss)override{
-        if(arrayPart.empty()){
+        if(array.empty()){
             ss << "{";
             for(auto& [k,v] : fields){
                 ss << k << ": " << v;
@@ -70,12 +83,11 @@ struct Table: public BaseObjectType<Table>
             ss << "}";
         }else{
             ss << "[";
-            int size = arrayPart.size();
-            for(int i = 0 ; i < size; ++i){
-                ss << arrayPart[i];
-                if(i != size - 1){
-                    ss << ", ";
+            for(auto& p: array){
+                if(p.first != array.begin()->first){
+                    ss << ",";
                 }
+                ss << p.second;
             }
             ss << "]";
         }
@@ -83,30 +95,28 @@ struct Table: public BaseObjectType<Table>
     bool equals(IObjectType* oth) const override{
         Table* o1 = (Table*)oth;
         auto& o = *o1;
-        if(arrayPart.size() != o1->arrayPart.size()){
+        if(array.size() != o1->array.size()){
             return false;
         }
         if(fields.size() != fields.size()){
             return false;
         }
-        if(arrayPart.empty()){
-            for(auto& [k,v] : fields){
-                auto v2 = o.get(k);
-                if(v2 == nullptr){
-                    return false;
-                }
-                if(!v.equals(*v2)){
-                    return false;
-                }
+        for(auto& [k,v] : fields){
+            auto v2 = o.get(k);
+            if(v2 == nullptr){
+                return false;
             }
-        }else{
-            int size = arrayPart.size();
-            for(int i = 0 ; i < size ; ++i){
-                auto& v = arrayPart[i];
-                auto& v2 = o.arrayPart[i];
-                if(!v.equals(v2)){
-                    return false;
-                }
+            if(!v.equals(*v2)){
+                return false;
+            }
+        }
+        for(auto& [k,v] : array){
+            auto v2 = o.get(k);
+            if(v2 == nullptr){
+                return false;
+            }
+            if(!v.equals(*v2)){
+                return false;
             }
         }
         return true;

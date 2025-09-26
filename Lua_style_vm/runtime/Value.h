@@ -2,7 +2,6 @@
 
 #include "runtime/IObjectType.h"
 #include "runtime/String.h"
-#include "runtime/context.h"
 #include "runtime/utils/primitive_cmp.hpp"
 
 namespace h7l { namespace runtime {
