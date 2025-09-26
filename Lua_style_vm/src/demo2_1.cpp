@@ -33,7 +33,7 @@ Value squareRoot(VM* vm) {
         vm->setRegister(0, sqrt(num));
     }else{
         //wrong
-        vm->setRegister(0, Value(kType_NULL, nullptr));
+        vm->setRegister(0, Value::makeNull());
     }
     return Value();
 }
@@ -48,7 +48,7 @@ Value addNumbers(VM* vm) {
         vm->setRegister(0, num1 + num2);
     }else{
         //wrong
-        vm->setRegister(0, Value(kType_NULL, nullptr));
+        vm->setRegister(0, Value::makeNull());
     }
     return Value();
 }
@@ -133,10 +133,10 @@ void main_demo21() {
             Value(25.0),            // 0: 25
             Value(16.0),            // 1: 16
             Value(10.0),            // 2: 10
-            Value(kType_NULL, nullptr),         // 3: 占位符，将在运行时替换为C函数
-            Value(kType_NULL, nullptr),         // 4: 占位符，将在运行时替换为C函数
+            Value::makeNull(),         // 3: 占位符，将在运行时替换为C函数
+            Value::makeNull(),         // 4: 占位符，将在运行时替换为C函数
             Value(20.0),            // 5: 20
-            Value(kType_NULL, nullptr)          // 6: 占位符，将在运行时替换为C函数
+            Value::makeNull()          // 6: 占位符，将在运行时替换为C函数
         },
         std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
         0, 7, 0 // 参数数, 寄存器数, upvalue数

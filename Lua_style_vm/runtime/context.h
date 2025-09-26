@@ -9,61 +9,9 @@
 #include <functional>
 
 #include "runtime/Instruction.h"
-#include "runtime/Value.h"
-#include "runtime/String.h"
+#include "runtime/Table.h"
 
 namespace h7l { namespace runtime {
-
-struct Table: public BaseObjectType<Table>
-{
-    std::unordered_map<std::string, Value> fields;
-    std::vector<Value> arrayPart;
-
-    Value* get(const std::string& key) {
-        if (fields.find(key) != fields.end()) {
-            return &fields[key];
-        }
-        return nullptr;
-    }
-    Value* get(size_t index) {
-        if (index < arrayPart.size()) {
-            return &arrayPart[index];
-        }
-        return nullptr;
-    }
-    void set(const std::string& key, const Value& value) {
-        fields[key] = value;
-    }
-    void set(size_t index, const Value& value) {
-        arrayPart[index] = value;
-    }
-    bool contains(const std::string& key) {
-        return fields.find(key) != fields.end();
-    }
-    bool contains(size_t index) {
-        return index >=0 && index < arrayPart.size();
-    }
-//---------------
-    void printTo(std::ostream& ss)override{
-        if(arrayPart.empty()){
-            ss << "{";
-            for(auto& [k,v] : fields){
-                ss << k << ": " << v;
-            }
-            ss << "}";
-        }else{
-            ss << "[";
-            int size = arrayPart.size();
-            for(int i = 0 ; i < size; ++i){
-                ss << arrayPart[i];
-                if(i != size - 1){
-                    ss << ", ";
-                }
-            }
-            ss << "]";
-        }
-    }
-};
 
 // 函数原型
 struct FunctionProto {
@@ -95,6 +43,9 @@ public:
     void printTo(std::ostream& ss)override{
          ss << "Closure@"<< this;
     }
+    bool equals(IObjectType* oth) const override{
+        return this == oth;
+    }
 };
 
 class VM;
@@ -109,6 +60,9 @@ public:
 
     void printTo(std::ostream& ss)override{
         ss << "CFunction@"<< this;
+    }
+    bool equals(IObjectType* oth) const override{
+        return this == oth;
     }
 };
 

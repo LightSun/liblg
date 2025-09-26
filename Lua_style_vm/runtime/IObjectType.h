@@ -17,6 +17,15 @@ typedef unsigned long int ULong;
 using String = std::string;
 using CString = const std::string&;
 
+enum CompareResult{
+    kCmpRet_ERROR_ARG    = -4,   //arg error
+    kCmpRet_ERROR_CANT_CMP = -3, //like bool can't cmp to non-bool, primitive cmp to object, t1 and t2 has no extend
+    kCmpRet_NAN  = -2,           //has NAN
+    kCmpRet_LESS = -1,
+    kCmpRet_EQUALS,
+    kCmpRet_GREATER
+};
+
 enum Type{
     kType_NONE = -1,
     kType_S8 ,
@@ -74,6 +83,8 @@ struct IObjectType
         }
     }
     virtual void printTo(std::ostream& ss) = 0;
+
+    virtual bool equals(IObjectType*) const = 0;
 };
 
 template<typename T>

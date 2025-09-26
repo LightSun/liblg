@@ -49,7 +49,6 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         }
 
         case ADD: {
-            // 支持数字和字符串的加法
             auto& v1 = registers[frame.base + instr.b];
             auto& v2 = registers[frame.base + instr.c];
             auto td = m_factory.getTypeDelegate(v1.type);
@@ -61,7 +60,6 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         }
 
         case CONCAT: {
-            // 专门用于字符串连接
             auto& v1 = registers[frame.base + instr.b];
             auto& v2 = registers[frame.base + instr.c];
             auto td = m_factory.getTypeDelegate(v1.type);
@@ -169,9 +167,8 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         case EQ: {
             auto& v1 = registers[frame.base + instr.b];
             auto& v2 = registers[frame.base + instr.c];
-            auto td = m_factory.getTypeDelegate(v1.type);
-
-            registers[frame.base + instr.a] = td->equals(v1, v2);
+            //
+            registers[frame.base + instr.a] = Value(v1.equals(v2));
             frame.pc++;
             break;
         }

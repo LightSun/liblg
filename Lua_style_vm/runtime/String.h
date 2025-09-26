@@ -142,6 +142,10 @@ public:
     void printTo(std::ostream& ss) override{
         ss << toString() << (void*)this;
     }
+    bool equals(IObjectType* o) const override{
+        StringRef* sr = (StringRef*)o;
+        return compareTo(*sr) == 0;
+    }
 
 private:
     void alloc0(u32 real_len){

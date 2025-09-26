@@ -3,6 +3,7 @@
 #include "runtime/IObjectType.h"
 #include "runtime/String.h"
 #include "runtime/context.h"
+#include "runtime/utils/primitive_cmp.hpp"
 
 namespace h7l { namespace runtime {
 
@@ -168,7 +169,7 @@ public:
         }
         return nullptr;
     }
-    Long getAsLong(){
+    Long getAsLong()const{
         switch (type) {
         case kType_S8:
             return base.s8;
@@ -189,7 +190,7 @@ public:
         }
         MED_ASSERT_X(false, "not int-like number.");
     }
-    double getAsNumber(){
+    double getAsNumber()const{
         switch (type) {
         case kType_S8:
             return base.s8;
@@ -277,6 +278,27 @@ public:
         {
             getPtr0()->printTo(ss);
         }
+        }
+    }
+    bool equals(const Value& o)const{
+        if(isIntLike() && o.isIntLike()){
+            return getAsLong() == o.getAsLong();
+        }else if(isFloatLike() && o.isFloatLike()){
+            if(type == kType_DOUBLE || o.type == kType_DOUBLE){
+                auto v1 = getAsNumber();
+                auto v2 = getAsNumber();
+                return safe_compare(v1, v2);
+            }else{
+                return base.f32 == o.base.f32;
+            }
+        }else if(type == o.type){
+            if(type > kType_NULL){
+                return getPtr0()->equals(o.getPtr0());
+            }else{
+                return true;
+            }
+        }else{
+            return false;
         }
     }
     void print(){

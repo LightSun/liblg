@@ -19,14 +19,17 @@ Value mul(Value& v1, Value& v2)override{\
 Value div(Value& v1, Value& v2)override{\
     return Value(v1.base.fn / v2.base.fn);\
 }\
-Value equals(Value& v1, Value& v2)override{\
-    return Value(v1.base.fn == v2.base.fn);\
-}\
 Value lessThan(Value& v1, Value& v2)override{\
     return Value(v1.base.fn < v2.base.fn);\
 }\
 Value lessEquals(Value& v1, Value& v2)override{\
     return Value(v1.base.fn <= v2.base.fn);\
+}
+
+#define DEF_TD_DISABLE_FUNC(name)\
+Value name(Value& /*v1*/, Value& /*v2*/)override{\
+    MED_ASSERT(false);\
+    return Value();\
 }
 
 
