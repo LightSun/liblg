@@ -522,13 +522,16 @@ static void test_string();
 static void test_table();
 static void test_mix();
 static void test_loop();
+
 extern void main_demo2();
+extern void main_demo21();
+
 
 int main() {
     //test_string();
     //test_table();
     //test_loop();
-    main_demo2();
+    main_demo21();
     return 0;
 }
 

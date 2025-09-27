@@ -2,8 +2,17 @@
 
 namespace h7l { namespace runtime {
 
+struct ClosureDeleter{
+
+    void operator()(Closure* p)const{
+        if(p){
+            p->unref();
+        }
+    }
+};
+
 void VM::execute(std::shared_ptr<FunctionProto> func){
-    auto closure = std::make_shared<Closure>(func);
+    std::unique_ptr<Closure, ClosureDeleter> closure(new Closure(func));
     callStack.push(CallFrame(closure.get(), 0, 0));
     running = true;
 

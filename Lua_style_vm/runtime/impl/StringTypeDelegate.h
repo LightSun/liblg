@@ -18,7 +18,7 @@ public:
         auto ref1 = v1.getPtr<StringRef>();
         auto ref2 = v2.getPtr<StringRef>();
         return Value::makeString(ref1->toString() + ref2->toString());
-    };
+    }
 };
 
 

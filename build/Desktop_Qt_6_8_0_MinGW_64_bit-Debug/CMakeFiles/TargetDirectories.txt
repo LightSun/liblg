@@ -1,0 +1,5 @@
+E:/study/github/mine/liblg/build/Desktop_Qt_6_8_0_MinGW_64_bit-Debug/CMakeFiles/edit_cache.dir
+E:/study/github/mine/liblg/build/Desktop_Qt_6_8_0_MinGW_64_bit-Debug/CMakeFiles/rebuild_cache.dir
+E:/study/github/mine/liblg/build/Desktop_Qt_6_8_0_MinGW_64_bit-Debug/Lua_style_vm/CMakeFiles/testLuaStyleVM.dir
+E:/study/github/mine/liblg/build/Desktop_Qt_6_8_0_MinGW_64_bit-Debug/Lua_style_vm/CMakeFiles/edit_cache.dir
+E:/study/github/mine/liblg/build/Desktop_Qt_6_8_0_MinGW_64_bit-Debug/Lua_style_vm/CMakeFiles/rebuild_cache.dir

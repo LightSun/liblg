@@ -13,7 +13,9 @@ struct CallFrame {
     int base; // 寄存器基址
 
     CallFrame(Closure* cl, int p, int b)
-        : closure(cl), pc(p), base(b) {}
+        : closure(cl), pc(p), base(b) {
+        cl->ref();
+    }
 
     ~CallFrame(){
         if(closure){
