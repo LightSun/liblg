@@ -2,6 +2,8 @@
 
 #include <atomic>
 #include <string>
+#include <sstream>
+#include <vector>
 #include "runtime/common_base.h"
 
 namespace h7l { namespace runtime {
@@ -16,6 +18,11 @@ typedef unsigned long int ULong;
 
 using String = std::string;
 using CString = const std::string&;
+template<typename T>
+using List = std::vector<T>;
+
+template<typename T>
+using CList = const std::vector<T>&;
 
 enum CompareResult{
     kCmpRet_ERROR_ARG    = -4,   //arg error
@@ -47,7 +54,7 @@ enum Type{
     kType_CFUNCTION,
     };
 
-//string
+//StringRef
 //struct Table
 //struct Closure
 //string CFunction
@@ -82,7 +89,7 @@ struct IObjectType
             delete this;
         }
     }
-    virtual void printTo(std::ostream& ss) = 0;
+    virtual void printTo(std::stringstream& ss) = 0;
 
     virtual bool equals(IObjectType*) const = 0;
 };
@@ -91,10 +98,15 @@ template<typename T>
 struct BaseObjectType: public IObjectType{
 
     void print(){
-        std::cout << *this << std::endl;
+        std::stringstream ss;
+        printTo(ss);
+        std::cout << ss.str() << std::endl;
     }
     friend std::ostream& operator<<(std::ostream& os, const T& bni){
-        ((T&)bni).printTo(os);
+        auto& b = ((T&)bni);
+        std::stringstream ss;
+        b.printTo(ss);
+        os << ss.str();
         return os;
     }
 };

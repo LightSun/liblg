@@ -3,6 +3,7 @@
 #include <stack>
 #include "runtime/context.h"
 #include "runtime/TypeDelegateFactory.h"
+#include "runtime/VMTracker.h"
 
 namespace h7l { namespace runtime {
 
@@ -25,7 +26,6 @@ struct CallFrame {
     }
 };
 
-
 class VM
 {
 public:
@@ -46,11 +46,18 @@ public:
     void execute(std::shared_ptr<FunctionProto> func);
 
 private:
+    void trackDiff(const Instruction& ins, CList<int> srcRegs, int dstReg);
+    void trackDiff(const Instruction& ins, int srcReg, int dstReg);
+    void trackDiff(const Instruction& ins);
+
+private:
     std::vector<Value> registers;  // 寄存器数组
     std::stack<CallFrame> callStack;  // 调用栈
     int pc;                        // 程序计数器
     bool running;                  // 运行标志
+    bool debug_ {true};
     TypeDelegateFactory m_factory;
+    VMTracker m_tracker;
 };
 
 }}

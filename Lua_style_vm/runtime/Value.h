@@ -2,7 +2,7 @@
 
 #include "runtime/IObjectType.h"
 #include "runtime/String.h"
-#include "runtime/utils/primitive_cmp.hpp"
+#include "runtime/utils/privates.h"
 
 namespace h7l { namespace runtime {
 
@@ -76,6 +76,12 @@ struct Value
     static Value makeString(CString str){
         return Value(kType_STRING, new StringRef(str), false);
     }
+    static Value makeClosure(IObjectType* p){
+        return Value(kType_CLOSURE, p, false);
+    }
+    static Value makeTable(IObjectType* p){
+        return Value(kType_TABLE, p, false);
+    }
     //
     IObjectType* getPtr0()const{
         return (IObjectType*)base.ptr;
@@ -132,18 +138,7 @@ public:
         return type == kType_STRING;
     }
     bool isIntLike()const{
-        switch (type) {
-        case kType_S8:
-        case kType_U8:
-        case kType_S16:
-        case kType_U16:
-        case kType_S32:
-        case kType_U32:
-        case kType_S64:
-        case kType_U64:
-            return true;
-        }
-        return false;
+        return pri_isIntLike(type);
     }
     bool isFloatLike()const{
         return type == kType_FLOAT || type == kType_DOUBLE;
@@ -169,115 +164,15 @@ public:
         return nullptr;
     }
     Long getAsLong()const{
-        switch (type) {
-        case kType_S8:
-            return base.s8;
-        case kType_U8:
-            return base.u8;
-        case kType_S16:
-            return base.s16;
-        case kType_U16:
-            return base.u16;
-        case kType_S32:
-            return base.s32;
-        case kType_U32:
-            return base.u32;
-        case kType_S64:
-            return base.s64;
-        case kType_U64:
-            return base.u64;
-        }
-        MED_ASSERT_X(false, "not int-like number.");
+        return pri_getAsLong(type, base);
     }
     double getAsNumber()const{
-        switch (type) {
-        case kType_S8:
-            return base.s8;
-        case kType_U8:
-            return base.u8;
-        case kType_S16:
-            return base.s16;
-        case kType_U16:
-            return base.u16;
-        case kType_S32:
-            return base.s32;
-        case kType_U32:
-            return base.u32;
-        case kType_S64:
-            return base.s64;
-        case kType_U64:
-            return base.u64;
-
-        case kType_FLOAT:
-            return base.f32;
-
-        case kType_DOUBLE:
-            return base.f64;
-        }
-        MED_ASSERT_X(false, "not number-like.");
+        return pri_getAsNumber(type, base);
     }
 
 public:
-    void printTo(std::ostream& ss){
-        switch (type) {
-        case kType_S8:
-        {
-            ss << base.s8;
-        }break;
-        case kType_U8:
-        {
-            ss << base.u8;
-        }break;
-        case kType_S16:
-        {
-            ss << base.s16;
-        }break;
-        case kType_U16:
-        {
-            ss << base.u16;
-        }break;
-        case kType_S32:
-        {
-            ss << base.s32;
-        }break;
-        case kType_U32:
-        {
-            ss << base.u32;
-        }break;
-        case kType_S64:
-        {
-            ss << base.s64;
-        }break;
-        case kType_U64:
-        {
-            ss << base.u64;
-        }break;
-
-        case kType_FLOAT:
-        {
-            ss << base.f32;
-        }break;
-
-        case kType_DOUBLE:
-        {
-            ss << base.f64;
-        }break;
-
-        case kType_BOOL:
-        {
-            ss << base.b;
-        }break;
-
-        case kType_NULL:
-        {
-            ss << "nullptr";
-        }break;
-
-        default:
-        {
-            getPtr0()->printTo(ss);
-        }
-        }
+    void printTo(std::stringstream& ss){
+        val_printTo(type, base, ss);
     }
     bool equals(const Value& o)const{
         if(isIntLike() && o.isIntLike()){
@@ -301,10 +196,15 @@ public:
         }
     }
     void print(){
-        std::cout << *this << std::endl;
+        std::stringstream ss;
+        printTo(ss);
+        std::cout << ss.str() << std::endl;
     }
     friend std::ostream& operator<<(std::ostream& os, const Value& bni){
-        ((Value&)bni).printTo(os);
+        auto& b = ((Value&)bni);
+        std::stringstream ss;
+        b.printTo(ss);
+        os << ss.str();
         return os;
     }
 };

@@ -73,6 +73,54 @@ void main_demo21() {
     test1();
 }
 
+
+void test1(){
+    using namespace demo21;
+    using VM = h7l::runtime::VM;
+    // 示例1：嵌套函数和闭包Demo - 修复版本
+    std::cout << "=== 嵌套函数和闭包Demo ===" << std::endl;
+
+    // 内部函数：计数器
+    auto counterProto = std::make_shared<FunctionProto>(
+        std::vector<Instruction>{
+            //dst, closure, upindex(abs)
+            {GETUPVAL, 1, 0, 0},    // 获取upvalue (计数器值)
+            {LOADK, 1, 0, 0},       // R1 = 1
+            {ADD, 0, 0, 1},         // 计数器加1
+            {SETUPVAL, 0, 0, 0},    // 设置upvalue
+            {RETURN, 0, 0, 0}       // 返回计数器值
+        },
+        std::vector<Value>{Value(1.0)}, // 常量1
+        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
+        0, 2, 1 // 参数数, 寄存器数, upvalue数
+        );
+
+    // 外部函数：创建计数器
+    auto createCounterProto = std::make_shared<FunctionProto>(
+        std::vector<Instruction>{
+            {LOADK, 0, 0, 0},       // R0 = 0 (初始计数器值)
+            //dstReg,nested-id, upval count
+            {CLOSURE, 1, 0, 1},     // 创建闭包，使用嵌套函数0，捕获1个upvalue
+            //closure, upindex(abs), upval
+            {SETUPVAL, 1, 0, 0},    // 设置闭包的upvalue为R0
+            {PRINT, 0, 1, 0},       // 打印初始值
+            {CALL, 0, 1, 0},        // 调用计数器函数
+            {PRINT, 0, 1, 0},       // 打印第一次调用结果
+            {CALL, 0, 1, 0},        // 再次调用计数器函数
+            {PRINT, 0, 1, 0},       // 打印第二次调用结果
+            {RETURN, 0, 0, 0}       // 返回
+        },
+        std::vector<Value>{Value(0.0)}, // 常量0
+        std::vector<std::shared_ptr<FunctionProto>>{counterProto}, // 嵌套函数
+        0, 2, 0 // 参数数, 寄存器数, upvalue数
+        );
+
+    VM vm1;
+    vm1.execute(createCounterProto);
+
+    std::cout << std::endl;
+}
+
 void test2(){
     using namespace demo21;
     using VM = h7l::runtime::VM;
@@ -125,49 +173,6 @@ void test2(){
 
 }
 
-void test1(){
-    using namespace demo21;
-    using VM = h7l::runtime::VM;
-    // 示例1：嵌套函数和闭包Demo - 修复版本
-    std::cout << "=== 嵌套函数和闭包Demo ===" << std::endl;
-
-    // 内部函数：计数器
-    auto counterProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {GETUPVAL, 0, 0, 0},    // 获取upvalue (计数器值)
-            {LOADK, 1, 0, 0},       // R1 = 1
-            {ADD, 0, 0, 1},         // 计数器加1
-            {SETUPVAL, 0, 0, 0},    // 设置upvalue
-            {RETURN, 0, 0, 0}       // 返回计数器值
-        },
-        std::vector<Value>{Value(1.0)}, // 常量1
-        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
-        0, 2, 1 // 参数数, 寄存器数, upvalue数
-        );
-
-    // 外部函数：创建计数器
-    auto createCounterProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {LOADK, 0, 0, 0},       // R0 = 0 (初始计数器值)
-            {CLOSURE, 1, 0, 1},     // 创建闭包，使用嵌套函数0，捕获1个upvalue
-            {SETUPVAL, 0, 0, 0},    // 设置闭包的upvalue为R0
-            {PRINT, 0, 0, 0},       // 打印初始值
-            {CALL, 1, 0, 0},        // 调用计数器函数
-            {PRINT, 1, 0, 0},       // 打印第一次调用结果
-            {CALL, 1, 0, 0},        // 再次调用计数器函数
-            {PRINT, 1, 0, 0},       // 打印第二次调用结果
-            {RETURN, 0, 0, 0}       // 返回
-        },
-        std::vector<Value>{Value(0.0)}, // 常量0
-        std::vector<std::shared_ptr<FunctionProto>>{counterProto}, // 嵌套函数
-        0, 2, 0 // 参数数, 寄存器数, upvalue数
-        );
-
-    VM vm1;
-    vm1.execute(createCounterProto);
-
-    std::cout << std::endl;
-}
 void test3(){
     using namespace demo21;
     using VM = h7l::runtime::VM;

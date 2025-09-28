@@ -5,7 +5,6 @@ project(h7l VERSION 1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 if (MSVC)
     add_compile_definitions(USE_MSC_ATOMICS)
 else(MSVC)

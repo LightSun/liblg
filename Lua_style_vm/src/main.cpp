@@ -10,6 +10,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <any>
+#include <stdio.h>
 
 // 自定义结构体 - 类似于Lua中的表
 struct Table {
@@ -528,6 +529,7 @@ extern void main_demo21();
 
 
 int main() {
+    setbuf(stdout, nullptr);
     //test_string();
     //test_table();
     //test_loop();

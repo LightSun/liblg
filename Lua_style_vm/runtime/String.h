@@ -139,7 +139,7 @@ public:
         return m_data[i];
     }
     //---------------
-    void printTo(std::ostream& ss) override{
+    void printTo(std::stringstream& ss) override{
         ss << toString() << (void*)this;
     }
     bool equals(IObjectType* o) const override{

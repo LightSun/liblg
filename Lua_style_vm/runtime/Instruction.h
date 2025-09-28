@@ -2,6 +2,8 @@
 
 namespace h7l { namespace runtime {
 
+//LOAD,MOVE - a,b
+//ADD, SUB, MUL, DIV, CONCAT: a,b,c
 // 指令操作码
 enum OpCode {
     LOADK,      // 将常量加载到寄存器
@@ -35,7 +37,7 @@ struct Instruction {
     OpCode opcode;
     int a;  // 通常用于目标寄存器
     int b;  // 操作数1或常量索引
-    int c;  // 操作数2
+    int c;  // 操作数2. for closure, this is upvalue count
 
     Instruction(OpCode op, int a = 0, int b = 0, int c = 0)
         : opcode(op), a(a), b(b), c(c) {}

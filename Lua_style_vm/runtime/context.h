@@ -40,8 +40,13 @@ public:
         upvalues.resize(p->upvalueCount);
     }
 
-    void printTo(std::ostream& ss)override{
-         ss << "Closure@"<< this;
+    void printTo(std::stringstream& ss)override{
+        ss << "Closure@"<< this << "(";
+        for(auto& v: upvalues){
+            v.printTo(ss);
+            ss << "; ";
+        }
+        ss << ")";
     }
     bool equals(IObjectType* oth) const override{
         return this == oth;
@@ -58,7 +63,7 @@ public:
     CFunction(std::function<Value(VM*)> func):func(func){}
     CFunction(CFUNC func):func(func){}
 
-    void printTo(std::ostream& ss)override{
+    void printTo(std::stringstream& ss)override{
         ss << "CFunction@"<< this;
     }
     bool equals(IObjectType* oth) const override{

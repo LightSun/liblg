@@ -74,7 +74,7 @@ struct Table: public BaseObjectType<Table>
     }
 
     //---------------
-    void printTo(std::ostream& ss)override{
+    void printTo(std::stringstream& ss)override{
         if(array.empty()){
             ss << "{";
             for(auto& [k,v] : fields){
