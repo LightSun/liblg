@@ -6,6 +6,9 @@
 
 namespace h7l { namespace runtime {
 
+class Closure;
+struct Table;
+
 struct Value
 {
     int type {kType_NONE};
@@ -76,11 +79,11 @@ struct Value
     static Value makeString(CString str){
         return Value(kType_STRING, new StringRef(str), false);
     }
-    static Value makeClosure(IObjectType* p){
-        return Value(kType_CLOSURE, p, false);
+    static Value makeClosure(Closure* p){
+        return Value(kType_CLOSURE, (IObjectType*)p, false);
     }
-    static Value makeTable(IObjectType* p){
-        return Value(kType_TABLE, p, false);
+    static Value makeTable(Table* p){
+        return Value(kType_TABLE, (IObjectType*)p, false);
     }
     //
     IObjectType* getPtr0()const{

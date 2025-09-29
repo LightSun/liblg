@@ -11,8 +11,10 @@
 #include <unordered_map>
 #include <any>
 #include <cmath>
+#include <unordered_set>
 
-namespace demo2{
+namespace demo2 {
+
 // 自定义结构体 - 类似于Lua中的表
 struct Table {
     std::unordered_map<std::string, std::any> fields;
@@ -58,11 +60,43 @@ class Closure;
 struct FunctionProto;
 
 // 值类型：可以存储数字、字符串、布尔值、表、闭包、C函数或nil
-using Value = std::variant<double, std::string, bool,
-                           std::shared_ptr<Table>,
-                          std::shared_ptr<Closure>,
-                           std::function<void(VM&)>,
-                           std::nullptr_t>;
+using Value = std::variant<double, std::string, bool, std::shared_ptr<Table>,
+                          std::shared_ptr<Closure>, std::function<void(VM&)>, std::nullptr_t>;
+
+// Upvalue引用 - 改进的实现
+struct Upvalue {
+    Value* value;           // 指向值的指针（可能是栈位置或堆位置）
+    Value closedValue;      // 当upvalue关闭时存储的值
+    bool isClosed;          // 是否已关闭（不再指向栈）
+
+    Upvalue(Value* v) : value(v), isClosed(false) {}
+
+    // 获取值
+    Value get() {
+        if (isClosed) {
+            return closedValue;
+        }
+        return *value;
+    }
+
+    // 设置值
+    void set(const Value& v) {
+        if (isClosed) {
+            closedValue = v;
+        } else {
+            *value = v;
+        }
+    }
+
+    // 关闭upvalue（当函数返回时）
+    void close() {
+        if (!isClosed) {
+            closedValue = *value;
+            isClosed = true;
+            value = nullptr;
+        }
+    }
+};
 
 // 指令操作码
 enum OpCode {
@@ -111,24 +145,25 @@ struct FunctionProto {
     std::vector<std::shared_ptr<FunctionProto>> nestedFunctions; // 嵌套函数
     int numParams;
     int numRegisters;
-    int upvalueCount; // upvalue数量
+    std::vector<std::pair<bool, int>> upvalueDescriptions; // upvalue描述 (是否是父函数的局部变量, 索引)
 
     FunctionProto(const std::vector<Instruction>& instrs,
                  const std::vector<Value>& consts = {},
                   const std::vector<std::shared_ptr<FunctionProto>>& nested = {},
-                  int params = 0, int regs = 10, int upvalues = 0)
+                  int params = 0, int regs = 10,
+                  const std::vector<std::pair<bool, int>>& upvalues = {})
         : instructions(instrs), constants(consts), nestedFunctions(nested),
-        numParams(params), numRegisters(regs), upvalueCount(upvalues) {}
+        numParams(params), numRegisters(regs), upvalueDescriptions(upvalues) {}
 };
 
 // 闭包：函数原型 + upvalue数组
 class Closure {
 public:
     std::shared_ptr<FunctionProto> proto;
-    std::vector<Value> upvalues;
+    std::vector<std::shared_ptr<Upvalue>> upvalues;
 
     Closure(std::shared_ptr<FunctionProto> p) : proto(p) {
-        upvalues.resize(p->upvalueCount);
+        upvalues.resize(p->upvalueDescriptions.size());
     }
 };
 
@@ -137,18 +172,23 @@ struct CallFrame {
     std::shared_ptr<Closure> closure;
     int pc;
     int base; // 寄存器基址
+    std::vector<Value> registers; // 该帧的寄存器
 
-    CallFrame(std::shared_ptr<Closure> cl, int p, int b)
-        : closure(cl), pc(p), base(b) {}
+    CallFrame(std::shared_ptr<Closure> cl, int p, int b, int numRegisters)
+        : closure(cl), pc(p), base(b) {
+        registers.resize(numRegisters);
+    }
 };
 
 // 虚拟机状态
 class VM {
 private:
-    std::vector<Value> registers;  // 寄存器数组
+    std::vector<Value> globalRegisters;  // 全局寄存器数组（用于跨帧共享）
     std::stack<CallFrame> callStack;  // 调用栈
-    int pc;                        // 程序计数器
     bool running;                  // 运行标志
+
+    // 已创建的upvalue缓存（用于共享upvalue）
+    std::unordered_map<int, std::shared_ptr<Upvalue>> openUpvalues;
 
     // 辅助函数：获取值作为数字
     double getAsNumber(const Value& v) {
@@ -247,39 +287,82 @@ private:
         }
     }
 
+    // 获取当前调用帧
+    CallFrame& currentFrame() {
+        return callStack.top();
+    }
+
+    // 获取寄存器值（相对于当前帧）
+    Value& getRegister(int index) {
+        CallFrame& frame = currentFrame();
+        if (index >= 0 && index < frame.registers.size()) {
+            return frame.registers[index];
+        }
+        static Value nil = nullptr;
+        return nil;
+    }
+
+    // 查找或创建upvalue
+    std::shared_ptr<Upvalue> findOrCreateUpvalue(int stackIndex) {
+        // 检查是否已经有这个upvalue
+        if (openUpvalues.find(stackIndex) != openUpvalues.end()) {
+            return openUpvalues[stackIndex];
+        }
+
+        // 创建新的upvalue
+        auto upvalue = std::make_shared<Upvalue>(&globalRegisters[stackIndex]);
+        openUpvalues[stackIndex] = upvalue;
+        return upvalue;
+    }
+
+    // 关闭所有指向指定栈位置之上的upvalue
+    void closeUpvaluesAbove(int stackIndex) {
+        std::vector<int> toRemove;
+        for (auto& pair : openUpvalues) {
+            if (pair.first >= stackIndex) {
+                pair.second->close();
+                toRemove.push_back(pair.first);
+            }
+        }
+        for (int index : toRemove) {
+            openUpvalues.erase(index);
+        }
+    }
+
 public:
-    VM() : pc(0), running(false) {
-        registers.resize(50);  // 初始寄存器数量
+    VM() : running(false) {
+        globalRegisters.resize(100);  // 全局寄存器数量
     }
 
     // 执行函数
     void execute(std::shared_ptr<FunctionProto> func) {
         auto closure = std::make_shared<Closure>(func);
-        callStack.push(CallFrame(closure, 0, 0));
+        callStack.push(CallFrame(closure, 0, 0, func->numRegisters));
         running = true;
 
         // 主执行循环
         while (running && !callStack.empty()) {
-            CallFrame& frame = callStack.top();
+            CallFrame& frame = currentFrame();
             auto closure = frame.closure;
-            pc = frame.pc;
 
-            if (pc >= closure->proto->instructions.size()) {
+            if (frame.pc >= closure->proto->instructions.size()) {
+                // 函数结束，关闭upvalues
+                closeUpvaluesAbove(frame.base);
                 callStack.pop();
                 if (!callStack.empty()) {
                     // 返回调用者
-                    CallFrame& caller = callStack.top();
+                    CallFrame& caller = currentFrame();
                     caller.pc++; // 继续执行下一条指令
                 }
                 continue;
             }
 
-            const Instruction& instr = closure->proto->instructions[pc];
+            const Instruction& instr = closure->proto->instructions[frame.pc];
 
             switch (instr.opcode) {
             case LOADK: {
                 if (instr.b < closure->proto->constants.size()) {
-                    registers[frame.base + instr.a] = closure->proto->constants[instr.b];
+                    getRegister(instr.a) = closure->proto->constants[instr.b];
                 } else {
                     std::cerr << "Constant index out of bounds: " << instr.b << std::endl;
                 }
@@ -288,29 +371,29 @@ public:
             }
 
             case LOADBOOL: {
-                registers[frame.base + instr.a] = static_cast<bool>(instr.b);
+                getRegister(instr.a) = static_cast<bool>(instr.b);
                 frame.pc++;
                 break;
             }
 
             case MOVE: {
-                registers[frame.base + instr.a] = registers[frame.base + instr.b];
+                getRegister(instr.a) = getRegister(instr.b);
                 frame.pc++;
                 break;
             }
 
             case ADD: {
                 // 支持数字和字符串的加法
-                if (std::holds_alternative<double>(registers[frame.base + instr.b]) &&
-                        std::holds_alternative<double>(registers[frame.base + instr.c])) {
-                    double val1 = std::get<double>(registers[frame.base + instr.b]);
-                    double val2 = std::get<double>(registers[frame.base + instr.c]);
-                    registers[frame.base + instr.a] = val1 + val2;
+                if (std::holds_alternative<double>(getRegister(instr.b)) &&
+                        std::holds_alternative<double>(getRegister(instr.c))) {
+                    double val1 = std::get<double>(getRegister(instr.b));
+                    double val2 = std::get<double>(getRegister(instr.c));
+                    getRegister(instr.a) = val1 + val2;
                 } else {
                     // 如果有一个操作数不是数字，则进行字符串连接
-                    std::string str1 = getAsString(registers[frame.base + instr.b]);
-                    std::string str2 = getAsString(registers[frame.base + instr.c]);
-                    registers[frame.base + instr.a] = str1 + str2;
+                    std::string str1 = getAsString(getRegister(instr.b));
+                    std::string str2 = getAsString(getRegister(instr.c));
+                    getRegister(instr.a) = str1 + str2;
                 }
                 frame.pc++;
                 break;
@@ -318,48 +401,53 @@ public:
 
             case CONCAT: {
                 // 专门用于字符串连接
-                std::string str1 = getAsString(registers[frame.base + instr.b]);
-                std::string str2 = getAsString(registers[frame.base + instr.c]);
-                registers[frame.base + instr.a] = str1 + str2;
+                std::string str1 = getAsString(getRegister(instr.b));
+                std::string str2 = getAsString(getRegister(instr.c));
+                getRegister(instr.a) = str1 + str2;
                 frame.pc++;
                 break;
             }
 
             case SUB: {
-                double val1 = getAsNumber(registers[frame.base + instr.b]);
-                double val2 = getAsNumber(registers[frame.base + instr.c]);
-                registers[frame.base + instr.a] = val1 - val2;
+                double val1 = getAsNumber(getRegister(instr.b));
+                double val2 = getAsNumber(getRegister(instr.c));
+                getRegister(instr.a) = val1 - val2;
                 frame.pc++;
                 break;
             }
 
             case MUL: {
-                double val1 = getAsNumber(registers[frame.base + instr.b]);
-                double val2 = getAsNumber(registers[frame.base + instr.c]);
-                registers[frame.base + instr.a] = val1 * val2;
+                double val1 = getAsNumber(getRegister(instr.b));
+                double val2 = getAsNumber(getRegister(instr.c));
+                getRegister(instr.a) = val1 * val2;
                 frame.pc++;
                 break;
             }
 
             case DIV: {
-                double val1 = getAsNumber(registers[frame.base + instr.b]);
-                double val2 = getAsNumber(registers[frame.base + instr.c]);
+                double val1 = getAsNumber(getRegister(instr.b));
+                double val2 = getAsNumber(getRegister(instr.c));
                 if (val2 != 0) {
-                    registers[frame.base + instr.a] = val1 / val2;
+                    getRegister(instr.a) = val1 / val2;
                 } else {
                     std::cerr << "Division by zero!\n";
-                    registers[frame.base + instr.a] = 0.0;
+                    getRegister(instr.a) = 0.0;
                 }
                 frame.pc++;
                 break;
             }
 
             case CALL: {
-                auto func = getAsClosure(registers[frame.base + instr.a]);
+                auto func = getAsClosure(getRegister(instr.a));
                 if (func) {
                     // 创建新的调用帧
-                    int newBase = frame.base + instr.a + 1; // 参数从当前寄存器之后开始
-                    callStack.push(CallFrame(func, 0, newBase));
+                    int newBase = frame.base + frame.registers.size(); // 新的基址
+                    callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
+
+                    // 复制参数
+                    for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
+                        globalRegisters[newBase + i] = getRegister(instr.a + 1 + i);
+                    }
                 } else {
                     std::cerr << "Type error: expected function for call\n";
                     frame.pc++;
@@ -368,7 +456,7 @@ public:
             }
 
             case CALL_C: {
-                auto cfunc = getAsCFunction(registers[frame.base + instr.a]);
+                auto cfunc = getAsCFunction(getRegister(instr.a));
                 if (cfunc) {
                     cfunc(*this); // 调用C函数
                 } else {
@@ -380,9 +468,10 @@ public:
 
             case RETURN: {
                 // 返回到调用者
+                closeUpvaluesAbove(frame.base);
                 callStack.pop();
                 if (!callStack.empty()) {
-                    CallFrame& caller = callStack.top();
+                    CallFrame& caller = currentFrame();
                     caller.pc++; // 继续执行下一条指令
                 }
                 break;
@@ -394,7 +483,7 @@ public:
             }
 
             case JMPIF: {
-                if (getAsBool(registers[frame.base + instr.b])) {
+                if (getAsBool(getRegister(instr.b))) {
                     frame.pc = instr.a;
                 } else {
                     frame.pc++;
@@ -403,7 +492,7 @@ public:
             }
 
             case JMPNOT: {
-                if (!getAsBool(registers[frame.base + instr.b])) {
+                if (!getAsBool(getRegister(instr.b))) {
                     frame.pc = instr.a;
                 } else {
                     frame.pc++;
@@ -414,8 +503,8 @@ public:
             case EQ: {
                 // 支持多种类型的相等比较
                 bool result = false;
-                const Value& val1 = registers[frame.base + instr.b];
-                const Value& val2 = registers[frame.base + instr.c];
+                const Value& val1 = getRegister(instr.b);
+                const Value& val2 = getRegister(instr.c);
 
                 if (val1.index() == val2.index()) {
                     // 相同类型比较
@@ -433,7 +522,7 @@ public:
                     }
                 }
 
-                registers[frame.base + instr.a] = result;
+                getRegister(instr.a) = result;
                 frame.pc++;
                 break;
             }
@@ -441,8 +530,8 @@ public:
             case LT: {
                 // 支持数字和字符串的小于比较
                 bool result = false;
-                const Value& val1 = registers[frame.base + instr.b];
-                const Value& val2 = registers[frame.base + instr.c];
+                const Value& val1 = getRegister(instr.b);
+                const Value& val2 = getRegister(instr.c);
 
                 if (std::holds_alternative<double>(val1) && std::holds_alternative<double>(val2)) {
                     result = std::get<double>(val1) < std::get<double>(val2);
@@ -452,7 +541,7 @@ public:
                     std::cerr << "Type error: cannot compare these types with LT\n";
                 }
 
-                registers[frame.base + instr.a] = result;
+                getRegister(instr.a) = result;
                 frame.pc++;
                 break;
             }
@@ -460,8 +549,8 @@ public:
             case LE: {
                 // 支持数字和字符串的小于等于比较
                 bool result = false;
-                const Value& val1 = registers[frame.base + instr.b];
-                const Value& val2 = registers[frame.base + instr.c];
+                const Value& val1 = getRegister(instr.b);
+                const Value& val2 = getRegister(instr.c);
 
                 if (std::holds_alternative<double>(val1) && std::holds_alternative<double>(val2)) {
                     result = std::get<double>(val1) <= std::get<double>(val2);
@@ -471,22 +560,22 @@ public:
                     std::cerr << "Type error: cannot compare these types with LE\n";
                 }
 
-                registers[frame.base + instr.a] = result;
+                getRegister(instr.a) = result;
                 frame.pc++;
                 break;
             }
 
             case NEWTABLE: {
-                registers[frame.base + instr.a] = std::make_shared<Table>();
+                getRegister(instr.a) = std::make_shared<Table>();
                 frame.pc++;
                 break;
             }
 
             case GETTABLE: {
-                auto table = getAsTable(registers[frame.base + instr.b]);
+                auto table = getAsTable(getRegister(instr.b));
                 if (table) {
                     // 根据键的类型从表中获取值
-                    const Value& key = registers[frame.base + instr.c];
+                    const Value& key = getRegister(instr.c);
                     if (std::holds_alternative<std::string>(key)) {
                         std::string keyStr = std::get<std::string>(key);
                         if (table->contains(keyStr)) {
@@ -495,61 +584,61 @@ public:
                             std::any value = table->get(keyStr);
                             try {
                                 // 尝试转换为double
-                                registers[frame.base + instr.a] = std::any_cast<double>(value);
+                                getRegister(instr.a) = std::any_cast<double>(value);
                             } catch (...) {
                                 try {
                                     // 尝试转换为string
-                                    registers[frame.base + instr.a] = std::any_cast<std::string>(value);
+                                    getRegister(instr.a) = std::any_cast<std::string>(value);
                                 } catch (...) {
                                     try {
                                         // 尝试转换为bool
-                                        registers[frame.base + instr.a] = std::any_cast<bool>(value);
+                                        getRegister(instr.a) = std::any_cast<bool>(value);
                                     } catch (...) {
                                         // 其他类型暂时设置为nil
-                                        registers[frame.base + instr.a] = nullptr;
+                                        getRegister(instr.a) = nullptr;
                                     }
                                 }
                             }
                         } else {
-                            registers[frame.base + instr.a] = nullptr;
+                            getRegister(instr.a) = nullptr;
                         }
                     } else if (std::holds_alternative<double>(key)) {
                         int index = static_cast<int>(std::get<double>(key));
                         if (table->contains(index)) {
                             std::any value = table->get(index);
                             try {
-                                registers[frame.base + instr.a] = std::any_cast<double>(value);
+                                getRegister(instr.a) = std::any_cast<double>(value);
                             } catch (...) {
                                 try {
-                                    registers[frame.base + instr.a] = std::any_cast<std::string>(value);
+                                    getRegister(instr.a) = std::any_cast<std::string>(value);
                                 } catch (...) {
                                     try {
-                                        registers[frame.base + instr.a] = std::any_cast<bool>(value);
+                                        getRegister(instr.a) = std::any_cast<bool>(value);
                                     } catch (...) {
-                                        registers[frame.base + instr.a] = nullptr;
+                                        getRegister(instr.a) = nullptr;
                                     }
                                 }
                             }
                         } else {
-                            registers[frame.base + instr.a] = nullptr;
+                            getRegister(instr.a) = nullptr;
                         }
                     } else {
                         std::cerr << "Table key must be string or number\n";
-                        registers[frame.base + instr.a] = nullptr;
+                        getRegister(instr.a) = nullptr;
                     }
                 } else {
-                    registers[frame.base + instr.a] = nullptr;
+                    getRegister(instr.a) = nullptr;
                 }
                 frame.pc++;
                 break;
             }
 
             case SETTABLE: {
-                auto table = getAsTable(registers[frame.base + instr.a]);
+                auto table = getAsTable(getRegister(instr.a));
                 if (table) {
                     // 根据键的类型设置表中的值
-                    const Value& key = registers[frame.base + instr.b];
-                    const Value& value = registers[frame.base + instr.c];
+                    const Value& key = getRegister(instr.b);
+                    const Value& value = getRegister(instr.c);
 
                     if (std::holds_alternative<std::string>(key)) {
                         std::string keyStr = std::get<std::string>(key);
@@ -587,14 +676,19 @@ public:
                     auto nestedProto = closure->proto->nestedFunctions[instr.b];
                     auto newClosure = std::make_shared<Closure>(nestedProto);
 
-                    // 设置upvalues (简化处理)
-                    // 这里应该根据指令的c字段来设置upvalue的来源
-                    // 但为了简化，我们直接从当前函数的寄存器中捕获
-                    for (int i = 0; i < nestedProto->upvalueCount && i < instr.c; i++) {
-                        newClosure->upvalues[i] = registers[frame.base + i];
+                    // 设置upvalues
+                    for (int i = 0; i < nestedProto->upvalueDescriptions.size(); i++) {
+                        const auto& desc = nestedProto->upvalueDescriptions[i];
+                        if (desc.first) {
+                            // 父函数的局部变量
+                            newClosure->upvalues[i] = findOrCreateUpvalue(frame.base + desc.second);
+                        } else {
+                            // 父函数的upvalue
+                            newClosure->upvalues[i] = closure->upvalues[desc.second];
+                        }
                     }
 
-                    registers[frame.base + instr.a] = newClosure;
+                    getRegister(instr.a) = newClosure;
                 } else {
                     std::cerr << "Nested function index out of bounds: " << instr.b << std::endl;
                 }
@@ -605,7 +699,7 @@ public:
             case GETUPVAL: {
                 // 获取upvalue
                 if (instr.b < closure->upvalues.size()) {
-                    registers[frame.base + instr.a] = closure->upvalues[instr.b];
+                    getRegister(instr.a) = closure->upvalues[instr.b]->get();
                 } else {
                     std::cerr << "Upvalue index out of bounds: " << instr.b << std::endl;
                 }
@@ -616,7 +710,7 @@ public:
             case SETUPVAL: {
                 // 设置upvalue
                 if (instr.b < closure->upvalues.size()) {
-                    closure->upvalues[instr.b] = registers[frame.base + instr.a];
+                    closure->upvalues[instr.b]->set(getRegister(instr.a));
                 } else {
                     std::cerr << "Upvalue index out of bounds: " << instr.b << std::endl;
                 }
@@ -625,7 +719,7 @@ public:
             }
 
             case PRINT: {
-                std::cout << valueToString(registers[frame.base + instr.a]) << std::endl;
+                std::cout << valueToString(getRegister(instr.a)) << std::endl;
                 frame.pc++;
                 break;
             }
@@ -644,242 +738,190 @@ public:
         }
     }
 
-    // 获取寄存器值（用于测试和调试）
-    Value getRegister(int index) {
-        if (index >= 0 && index < registers.size()) {
-            return registers[index];
+    // 获取全局寄存器值（用于测试和调试）
+    Value getGlobalRegister(int index) {
+        if (index >= 0 && index < globalRegisters.size()) {
+            return globalRegisters[index];
         }
         return nullptr;
     }
 
-    // 设置寄存器值（用于C函数）
-    void setRegister(int index, Value value) {
-        if (index >= 0 && index < registers.size()) {
-            registers[index] = value;
+    // 设置全局寄存器值（用于C函数）
+    void setGlobalRegister(int index, Value value) {
+        if (index >= 0 && index < globalRegisters.size()) {
+            globalRegisters[index] = value;
         }
     }
 };
 
 // C库函数示例
 void printNumber(VM& vm) {
-    Value arg = vm.getRegister(0); // 获取第一个参数
+    Value arg = vm.getGlobalRegister(0); // 获取第一个参数
     std::cout << "C function printNumber: " <<
         (std::holds_alternative<double>(arg) ? std::to_string(std::get<double>(arg)) : "NaN")
               << std::endl;
 }
 
 void squareRoot(VM& vm) {
-    Value arg = vm.getRegister(0);
+    Value arg = vm.getGlobalRegister(0);
     if (std::holds_alternative<double>(arg)) {
         double num = std::get<double>(arg);
         if (num >= 0) {
-            vm.setRegister(0, sqrt(num)); // 返回值放在第一个寄存器
+            vm.setGlobalRegister(0, sqrt(num)); // 返回值放在第一个寄存器
         } else {
-            vm.setRegister(0, nullptr); // 错误情况返回nil
+            vm.setGlobalRegister(0, nullptr); // 错误情况返回nil
         }
     } else {
-        vm.setRegister(0, nullptr); // 错误情况返回nil
+        vm.setGlobalRegister(0, nullptr); // 错误情况返回nil
     }
 }
 
 void addNumbers(VM& vm) {
-    Value arg1 = vm.getRegister(0);
-    Value arg2 = vm.getRegister(1);
+    Value arg1 = vm.getGlobalRegister(0);
+    Value arg2 = vm.getGlobalRegister(1);
     if (std::holds_alternative<double>(arg1) && std::holds_alternative<double>(arg2)) {
         double result = std::get<double>(arg1) + std::get<double>(arg2);
-        vm.setRegister(0, result); // 返回值放在第一个寄存器
+        vm.setGlobalRegister(0, result); // 返回值放在第一个寄存器
     } else {
-        vm.setRegister(0, nullptr); // 错误情况返回nil
+        vm.setGlobalRegister(0, nullptr); // 错误情况返回nil
     }
 }
 
 }
-
 // 示例使用
 void main_demo2() {
-    using namespace demo2;
-    // 示例1：嵌套函数和闭包Demo - 修复版本
-    std::cout << "=== 嵌套函数和闭包Demo ===" << std::endl;
+//    using namespace demo2;
+//    // 示例1：改进的嵌套函数和闭包Demo
+//    std::cout << "=== 改进的嵌套函数和闭包Demo ===" << std::endl;
 
-    // 内部函数：计数器
-    auto counterProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {GETUPVAL, 0, 0, 0},    // 获取upvalue (计数器值)
-            {LOADK, 1, 0, 0},       // R1 = 1
-            {ADD, 0, 0, 1},         // 计数器加1
-            {SETUPVAL, 0, 0, 0},    // 设置upvalue
-            {RETURN, 0, 0, 0}       // 返回计数器值
-        },
-        std::vector<Value>{Value(1.0)}, // 常量1
-        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
-        0, 2, 1 // 参数数, 寄存器数, upvalue数
-        );
+//    // 内部函数：计数器
+//    auto counterProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {GETUPVAL, 0, 0, 0},    // 获取upvalue (计数器值)
+//            {LOADK, 1, 0, 0},       // R1 = 1
+//            {ADD, 0, 0, 1},         // 计数器加1
+//            {SETUPVAL, 0, 0, 0},    // 设置upvalue
+//            {RETURN, 0, 0, 0}       // 返回计数器值
+//        },
+//        std::vector<Value>{Value(1.0)}, // 常量1
+//        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
+//        0, 2, // 参数数, 寄存器数
+//        {{true, 0}} // upvalue描述: 父函数的第0个局部变量
+//        );
 
-    // 外部函数：创建计数器
-    auto createCounterProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {LOADK, 0, 0, 0},       // R0 = 0 (初始计数器值)
-            {CLOSURE, 1, 0, 1},     // 创建闭包，使用嵌套函数0，捕获1个upvalue
-            {SETUPVAL, 0, 0, 0},    // 设置闭包的upvalue为R0
-            {PRINT, 0, 0, 0},       // 打印初始值
-            {CALL, 1, 0, 0},        // 调用计数器函数
-            {PRINT, 1, 0, 0},       // 打印第一次调用结果
-            {CALL, 1, 0, 0},        // 再次调用计数器函数
-            {PRINT, 1, 0, 0},       // 打印第二次调用结果
-            {RETURN, 0, 0, 0}       // 返回
-        },
-        std::vector<Value>{Value(0.0)}, // 常量0
-        std::vector<std::shared_ptr<FunctionProto>>{counterProto}, // 嵌套函数
-        0, 2, 0 // 参数数, 寄存器数, upvalue数
-        );
+//    // 外部函数：创建计数器
+//    auto createCounterProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {LOADK, 0, 0, 0},       // R0 = 0 (初始计数器值)
+//            {CLOSURE, 1, 0, 0},     // 创建闭包，使用嵌套函数0
+//            {PRINT, 0, 0, 0},       // 打印初始值
+//            {CALL, 1, 0, 0},        // 调用计数器函数
+//            {PRINT, 1, 0, 0},       // 打印第一次调用结果
+//            {CALL, 1, 0, 0},        // 再次调用计数器函数
+//            {PRINT, 1, 0, 0},       // 打印第二次调用结果
+//            {RETURN, 0, 0, 0}       // 返回
+//        },
+//        std::vector<Value>{Value(0.0)}, // 常量0
+//        std::vector<std::shared_ptr<FunctionProto>>{counterProto}, // 嵌套函数
+//        0, 2 // 参数数, 寄存器数
+//        );
 
-    VM vm1;
-    vm1.execute(createCounterProto);
+//    VM vm1;
+//    vm1.execute(createCounterProto);
 
-    std::cout << std::endl;
+//    std::cout << std::endl;
 
-    // 示例2：C函数调用Demo - 修复版本
-    std::cout << "=== C函数调用Demo ===" << std::endl;
+//    // 示例2：共享upvalue的Demo
+//    std::cout << "=== 共享upvalue的Demo ===" << std::endl;
 
-    auto cFunctionDemo = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {LOADK, 0, 0, 0},       // R0 = 25
-            {LOADK, 1, 3, 0},       // R1 = printNumber函数
-            {CALL_C, 1, 0, 0},      // 调用C函数printNumber
+//    // 内部函数1：增加计数器
+//    auto incrementProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {GETUPVAL, 0, 0, 0},    // 获取upvalue (计数器值)
+//            {LOADK, 1, 0, 0},       // R1 = 1
+//            {ADD, 0, 0, 1},         // 计数器加1
+//            {SETUPVAL, 0, 0, 0},    // 设置upvalue
+//            {RETURN, 0, 0, 0}       // 返回计数器值
+//        },
+//        std::vector<Value>{Value(1.0)}, // 常量1
+//        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
+//        0, 2, // 参数数, 寄存器数
+//        {{true, 0}} // upvalue描述: 父函数的第0个局部变量
+//        );
 
-            {LOADK, 0, 1, 0},       // R0 = 16
-            {LOADK, 1, 4, 0},       // R1 = squareRoot函数
-            {CALL_C, 1, 0, 0},      // 调用C函数squareRoot
-            {PRINT, 0, 0, 0},       // 打印平方根结果
+//    // 内部函数2：获取计数器值
+//    auto getterProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {GETUPVAL, 0, 0, 0},    // 获取upvalue (计数器值)
+//            {RETURN, 0, 0, 0}       // 返回计数器值
+//        },
+//        std::vector<Value>{}, // 无常量
+//        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
+//        0, 1, // 参数数, 寄存器数
+//        {{true, 0}} // upvalue描述: 父函数的第0个局部变量
+//        );
 
-            {LOADK, 0, 2, 0},       // R0 = 10
-            {LOADK, 1, 5, 0},       // R1 = 20
-            {LOADK, 2, 6, 0},       // R2 = addNumbers函数
-            {CALL_C, 2, 0, 0},      // 调用C函数addNumbers
-            {PRINT, 0, 0, 0},       // 打印加法结果
+//    // 工厂函数：创建共享计数器的函数
+//    auto counterFactoryProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {LOADK, 0, 0, 0},       // R0 = 0 (初始计数器值)
+//            {CLOSURE, 1, 0, 0},     // 创建增加函数
+//            {CLOSURE, 2, 1, 0},     // 创建获取函数
+//            {NEWTABLE, 3, 0, 0},    // 创建表
+//            {LOADK, 4, 1, 0},       // R4 = "increment"
+//            {SETTABLE, 3, 4, 1},    // table.increment = 增加函数
+//            {LOADK, 4, 2, 0},       // R4 = "get"
+//            {SETTABLE, 3, 4, 2},    // table.get = 获取函数
+//            {RETURN, 3, 0, 0}       // 返回表
+//        },
+//        std::vector<Value>{
+//            Value(0.0),                     // 0: 初始值
+//            Value(std::string("increment")), // 1: "increment"
+//            Value(std::string("get"))        // 2: "get"
+//        },
+//        std::vector<std::shared_ptr<FunctionProto>>{incrementProto, getterProto}, // 嵌套函数
+//        0, 5 // 参数数, 寄存器数
+//        );
 
-            {HALT, 0, 0, 0}         // 停止
-        },
-        std::vector<Value>{
-            Value(25.0),            // 0: 25
-            Value(16.0),            // 1: 16
-            Value(10.0),            // 2: 10
-            Value(nullptr),         // 3: 占位符，将在运行时替换为C函数
-            Value(nullptr),         // 4: 占位符，将在运行时替换为C函数
-            Value(20.0),            // 5: 20
-            Value(nullptr)          // 6: 占位符，将在运行时替换为C函数
-        },
-        std::vector<std::shared_ptr<FunctionProto>>{}, // 无嵌套函数
-        0, 7, 0 // 参数数, 寄存器数, upvalue数
-        );
+//    // 使用共享计数器
+//    auto useSharedCounterProto = std::make_shared<FunctionProto>(
+//        std::vector<Instruction>{
+//            {CLOSURE, 0, 0, 0},     // 创建工厂函数
+//            {CALL, 0, 0, 0},        // 调用工厂函数
+//            {MOVE, 1, 0, 0},        // R1 = 返回的表
 
-    // 注册C函数到常量表
-    VM vm2;
-    // 将C函数放入常量表
-    auto cFuncProto = std::const_pointer_cast<FunctionProto>(cFunctionDemo);
-    cFuncProto->constants[3] = Value(std::function<void(VM&)>(printNumber));
-    cFuncProto->constants[4] = Value(std::function<void(VM&)>(squareRoot));
-    cFuncProto->constants[6] = Value(std::function<void(VM&)>(addNumbers));
+//            // 使用共享计数器
+//            {LOADK, 2, 0, 0},       // R2 = "increment"
+//            {GETTABLE, 3, 1, 2},    // R3 = table.increment
+//            {CALL, 3, 0, 0},        // 调用增加函数
+//            {PRINT, 3, 0, 0},       // 打印结果 (1)
 
-    vm2.execute(cFunctionDemo);
+//            {LOADK, 2, 1, 0},       // R2 = "get"
+//            {GETTABLE, 3, 1, 2},    // R3 = table.get
+//            {CALL, 3, 0, 0},        // 调用获取函数
+//            {PRINT, 3, 0, 0},       // 打印结果 (1)
 
-    std::cout << std::endl;
+//            {LOADK, 2, 0, 0},       // R2 = "increment"
+//            {GETTABLE, 3, 1, 2},    // R3 = table.increment
+//            {CALL, 3, 0, 0},        // 再次调用增加函数
+//            {PRINT, 3, 0, 0},       // 打印结果 (2)
 
-    // 示例3：修复的复杂嵌套函数Demo - 运算器工厂
-    std::cout << "=== 修复的复杂嵌套函数Demo: 运算器工厂 ===" << std::endl;
+//            {LOADK, 2, 1, 0},       // R2 = "get"
+//            {GETTABLE, 3, 1, 2},    // R3 = table.get
+//            {CALL, 3, 0, 0},        // 再次调用获取函数
+//            {PRINT, 3, 0, 0},       // 打印结果 (2)
 
-    // 内部函数：加法器
-    auto adderProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {GETUPVAL, 2, 0, 0},    // 获取upvalue (增量值)
-            {ADD, 0, 0, 2},         // 参数 + 增量
-            {RETURN, 0, 0, 0}       // 返回结果
-        },
-        std::vector<Value>{},
-        std::vector<std::shared_ptr<FunctionProto>>{},
-        1, 3, 1 // 1个参数, 3个寄存器, 1个upvalue
-        );
+//            {HALT, 0, 0, 0}         // 停止
+//        },
+//        std::vector<Value>{
+//            Value(std::string("increment")), // 0: "increment"
+//            Value(std::string("get"))        // 1: "get"
+//        },
+//        std::vector<std::shared_ptr<FunctionProto>>{counterFactoryProto}, // 嵌套函数
+//        0, 4 // 参数数, 寄存器数
+//        );
 
-    // 内部函数：乘法器
-    auto multiplierProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {GETUPVAL, 2, 0, 0},    // 获取upvalue (乘数)
-            {MUL, 0, 0, 2},         // 参数 * 乘数
-            {RETURN, 0, 0, 0}       // 返回结果
-        },
-        std::vector<Value>{},
-        std::vector<std::shared_ptr<FunctionProto>>{},
-        1, 3, 1 // 1个参数, 3个寄存器, 1个upvalue
-        );
+//    VM vm2;
+//    vm2.execute(useSharedCounterProto);
 
-    // 工厂函数：创建运算器
-    auto factoryProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            {LOADK, 4, 0, 0},       // R4 = "add"
-            {EQ, 5, 0, 4},          // 比较操作类型
-            {JMPNOT, 7, 5, 0},      // 如果不是"add"，跳转到乘法器创建
-
-            // 创建加法器
-            {CLOSURE, 3, 0, 1},     // 创建加法器闭包
-            {SETUPVAL, 1, 0, 0},    // 设置加法器的upvalue为操作数
-            {MOVE, 0, 3, 0},        // 将加法器移动到R0作为返回值
-            {JMP, 5, 0, 0},         // 跳转到结束
-
-            // 创建乘法器
-            {CLOSURE, 3, 1, 1},     // 创建乘法器闭包
-            {SETUPVAL, 1, 0, 0},    // 设置乘法器的upvalue为操作数
-            {MOVE, 0, 3, 0},        // 将乘法器移动到R0作为返回值
-
-            // 结束
-            {RETURN, 0, 0, 0}       // 返回创建的运算器
-        },
-        std::vector<Value>{
-            Value(std::string("add")) // 0: "add"
-        },
-        std::vector<std::shared_ptr<FunctionProto>>{adderProto, multiplierProto},
-        2, 6, 0 // 2个参数, 6个寄存器, 0个upvalue
-        );
-
-    // 使用工厂函数
-    auto useFactoryProto = std::make_shared<FunctionProto>(
-        std::vector<Instruction>{
-            // 创建加法器 (加5)
-            {LOADK, 0, 0, 0},       // R0 = "add"
-            {LOADK, 1, 1, 0},       // R1 = 5
-            {CLOSURE, 2, 0, 0},     // 创建工厂函数闭包
-            {CALL, 2, 2, 0},        // 调用工厂函数
-
-            // 测试加法器
-            {MOVE, 3, 0, 0},        // R3 = 加法器函数
-            {LOADK, 4, 2, 0},       // R4 = 10
-            {CALL, 3, 1, 0},        // 调用加法器
-            {PRINT, 3, 0, 0},       // 打印结果 (10 + 5 = 15)
-
-            // 创建乘法器 (乘3)
-            {LOADK, 0, 3, 0},       // R0 = "multiply"
-            {LOADK, 1, 4, 0},       // R1 = 3
-            {CALL, 2, 2, 0},        // 调用工厂函数
-
-            // 测试乘法器
-            {MOVE, 3, 0, 0},        // R3 = 乘法器函数
-            {LOADK, 4, 5, 0},       // R4 = 7
-            {CALL, 3, 1, 0},        // 调用乘法器
-            {PRINT, 3, 0, 0},       // 打印结果 (7 * 3 = 21)
-
-            {HALT, 0, 0, 0}         // 停止
-        },
-        std::vector<Value>{
-            Value(std::string("add")),      // 0: "add"
-            Value(5.0),                     // 1: 5
-            Value(10.0),                    // 2: 10
-            Value(std::string("multiply")), // 3: "multiply"
-            Value(3.0),                     // 4: 3
-            Value(7.0)                      // 5: 7
-        },
-        std::vector<std::shared_ptr<FunctionProto>>{factoryProto},
-        0, 6, 0 // 参数数, 寄存器数, upvalue数
-        );
-
-    VM vm3;
-    vm3.execute(useFactoryProto);
 }

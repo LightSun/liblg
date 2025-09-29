@@ -22,15 +22,20 @@ public:
             this->dstReg = dst;
         }
     };
+    void saveRegisters(std::vector<Value>& vals, int start, int cnt){
+        m_saveRegisters = {vals.begin() + start, vals.begin() + start + cnt};
+        m_curRegisters = &vals[start];
+    }
+
     void saveRegisters(std::vector<Value>& vals){
         m_saveRegisters = vals;
-        m_curRegisters = &vals;
+        m_curRegisters = vals.data();
     };
     void trackDiff(const Instruction&, const Item&);
 
 private:
     std::vector<Value> m_saveRegisters;
-    std::vector<Value>* m_curRegisters {nullptr};
+    Value* m_curRegisters {nullptr};//arr
 };
 
 }}

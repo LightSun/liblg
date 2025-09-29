@@ -14,7 +14,7 @@ void VMTracker::trackDiff(const Instruction& ins, const Item& item){
         ss << "\t[Src][" << r << "]: " << v;
     }
     if(item.dstReg >= 0){
-        auto& v = m_curRegisters->at(item.dstReg);
+        auto& v = m_curRegisters[item.dstReg];
         ss << "\t[Dst][" << item.dstReg << "]: " << v;
     }
     std::cout << ss.str() << std::endl;
