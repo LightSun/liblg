@@ -11,7 +11,7 @@ namespace h7l { namespace runtime {
 // 调用帧
 struct CallFrame {
     Closure* closure;
-    int pc;
+    int pc {0};
     int base; // 寄存器基址
     int numReg;
     //std::vector<Value> registers;
@@ -20,14 +20,42 @@ struct CallFrame {
         : closure(cl), pc(p), base(b),numReg(numReg) {
         cl->ref();
     }
-
     ~CallFrame(){
         if(closure){
             closure->unref();
             closure = nullptr;
         }
     }
-
+    CallFrame(CallFrame&& cf){
+        this->closure = cf.closure;
+        this->pc = cf.pc;
+        this->base = cf.base;
+        this->numReg = cf.numReg;
+        closure->ref();
+    }
+    CallFrame(const CallFrame& cf){
+        this->closure = cf.closure;
+        this->pc = cf.pc;
+        this->base = cf.base;
+        this->numReg = cf.numReg;
+        closure->ref();
+    }
+    CallFrame& operator=(CallFrame&& cf){
+        this->closure = cf.closure;
+        this->pc = cf.pc;
+        this->base = cf.base;
+        this->numReg = cf.numReg;
+        closure->ref();
+        return *this;
+    }
+    CallFrame& operator=(const CallFrame& cf){
+        this->closure = cf.closure;
+        this->pc = cf.pc;
+        this->base = cf.base;
+        this->numReg = cf.numReg;
+        closure->ref();
+        return *this;
+    }
     int getNumRegs()const{
         return numReg;
     }

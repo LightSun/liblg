@@ -91,9 +91,6 @@ struct Value
     }
     void unref(){
         if(type > kType_NULL){
-            if(type == kType_CLOSURE){
-                printf("\n");
-            }
             getPtr0()->unref();
             base.ptr = nullptr;
             type = kType_NULL;

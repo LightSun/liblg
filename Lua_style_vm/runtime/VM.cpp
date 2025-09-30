@@ -305,6 +305,7 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
                 // 创建新的调用帧
                 int newBase = frame.base + frame.getNumRegs();
                 printf(" >> newBase = %d\n", newBase);
+                //callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
                 callStack.emplace(func, 0, newBase, func->proto->numRegisters);
                 // 复制参数.
                 for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
