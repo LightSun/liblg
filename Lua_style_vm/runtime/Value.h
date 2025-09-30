@@ -11,7 +11,7 @@ struct Table;
 
 struct Value
 {
-    int type {kType_NONE};
+    Type type {kType_NONE};
     TypeValue base;
 
     Value(char v){
@@ -58,7 +58,7 @@ struct Value
         type = kType_BOOL;
         base.b = v;
     }
-    Value(int objType, IObjectType* v, bool ref = false){
+    Value(Type objType, IObjectType* v, bool ref = false){
         type = objType;
         base.ptr = v;
         if(ref && v){
@@ -73,16 +73,16 @@ struct Value
     ~Value(){
         unref();
     }
-    static Value makeNull(){
+    static inline Value makeNull(){
         return Value(kType_NULL, nullptr);
     }
-    static Value makeString(CString str){
+    static inline Value makeString(CString str){
         return Value(kType_STRING, new StringRef(str), false);
     }
-    static Value makeClosure(Closure* p){
+    static inline Value makeClosure(Closure* p){
         return Value(kType_CLOSURE, (IObjectType*)p, false);
     }
-    static Value makeTable(Table* p){
+    static inline Value makeTable(Table* p){
         return Value(kType_TABLE, (IObjectType*)p, false);
     }
     //
@@ -91,8 +91,12 @@ struct Value
     }
     void unref(){
         if(type > kType_NULL){
+            if(type == kType_CLOSURE){
+                printf("\n");
+            }
             getPtr0()->unref();
             base.ptr = nullptr;
+            type = kType_NULL;
         }
     }
     //------------

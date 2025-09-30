@@ -31,6 +31,10 @@ public:
         m_saveRegisters = vals;
         m_curRegisters = vals.data();
     };
+    void clearRegisters(){
+        m_saveRegisters.clear();
+        m_curRegisters = nullptr;
+    }
     void trackDiff(const Instruction&, const Item&);
 
 private:

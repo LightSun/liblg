@@ -45,6 +45,9 @@ public:
     Closure(std::shared_ptr<FunctionProto> p) : proto(p) {
         upvalues.resize(p->upvDescs.size());
     }
+    ~Closure(){
+       // fprintf(stderr, "~Closure\n");
+    }
 
     void printTo(std::stringstream& ss)override{
         ss << "Closure@"<< this << "(";

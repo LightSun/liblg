@@ -12,8 +12,7 @@ struct ClosureDeleter{
 };
 
 void VM::execute(std::shared_ptr<FunctionProto> func){
-    std::unique_ptr<Closure, ClosureDeleter> closure(new Closure(func));
-    callStack.push(CallFrame(closure.get(), 0, 0, func->numRegisters));
+    callStack.emplace(new Closure(func), 0, 0, func->numRegisters);
     running = true;
 
     // 主执行循环
@@ -262,7 +261,8 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
                          newClosure->upvalues[i] = closure->upvalues[desc.second];
                      }
                 }
-                getRegister(instr.a) = Value::makeClosure(newClosure.release());
+                auto val_clo = Value::makeClosure(newClosure.release());
+                getRegister(instr.a) = val_clo;
             } else {
                 std::cerr << "Nested function index out of bounds: " << instr.b << std::endl;
             }
@@ -305,7 +305,7 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
                 // 创建新的调用帧
                 int newBase = frame.base + frame.getNumRegs();
                 printf(" >> newBase = %d\n", newBase);
-                callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
+                callStack.emplace(func, 0, newBase, func->proto->numRegisters);
                 // 复制参数.
                 for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
                     globalRegisters_[newBase + i] = getRegister(instr.a + 1 + i);
@@ -339,7 +339,7 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
                 CallFrame& caller = callStack.top();
                 caller.pc++; // 继续执行下一条指令
             }
-            trackDiff(instr, {}, -1);
+            trackDiff(instr);
             break;
         }
 
@@ -361,6 +361,9 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
             break;
         }
         }
+        if(debug_){
+            m_tracker.clearRegisters();
+        }
     }
 }
 
@@ -376,14 +379,11 @@ void VM::closeUpvaluesAbove(int stackIndex){
         openUpvalues_.erase(index);
     }
 }
-// 查找或创建upvalue
 std::shared_ptr<Upvalue> VM::findOrCreateUpvalue(int stackIndex) {
-    // 检查是否已经有这个upvalue
+    printf("findOrCreateUpvalue >> stackIndex = %d\n", stackIndex);
     if (openUpvalues_.find(stackIndex) != openUpvalues_.end()) {
         return openUpvalues_[stackIndex];
     }
-
-    // 创建新的upvalue
     auto upvalue = std::make_shared<Upvalue>(&globalRegisters_[stackIndex]);
     openUpvalues_[stackIndex] = upvalue;
     return upvalue;

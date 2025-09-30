@@ -58,6 +58,8 @@ enum Type{
 //struct Table
 //struct Closure
 //string CFunction
+struct IObjectType;
+
 typedef union TypeValue{
     char s8;
     unsigned char u8;
@@ -70,7 +72,7 @@ typedef union TypeValue{
     bool b;
     float f32;
     double f64;
-    void* ptr;
+    IObjectType* ptr;
 }TypeValue;
 
 struct IObjectType
