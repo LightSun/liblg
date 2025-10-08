@@ -20,35 +20,35 @@ namespace demo21{
 using namespace h7l::runtime;
 
 // C库函数示例
-Value printNumber(VM* vm) {
-    Value& arg = vm->getGlobalRegister(0); // 获取第一个参数
+Value printNumber(VM* vm,CallFrame* f) {
+    Value& arg = vm->getRegister(f, 0); // 获取第一个参数
     std::cout << "C function printNumber: " << arg << std::endl;
     return Value();
 }
 
-Value squareRoot(VM* vm) {
-    Value& arg = vm->getGlobalRegister(0);
+Value squareRoot(VM* vm,CallFrame* f) {
+    Value& arg = vm->getRegister(f, 0);
     if(arg.canCastToNumber()){
         auto num = arg.getAsNumber();
-        vm->setGlobalRegister(0, sqrt(num));
+        vm->setRegister(f, 0, sqrt(num));
     }else{
         //wrong
-        vm->setGlobalRegister(0, Value::makeNull());
+        vm->setRegister(f, 0, Value::makeNull());
     }
     return Value();
 }
 
-Value addNumbers(VM* vm) {
-    Value& arg1 = vm->getGlobalRegister(0);
-    Value& arg2 = vm->getGlobalRegister(1);
+Value addNumbers(VM* vm, CallFrame* f) {
+    Value& arg1 = vm->getRegister(f, 0);
+    Value& arg2 = vm->getRegister(f, 1);
 
     if(arg1.canCastToNumber() && arg2.canCastToNumber()){
         auto num1 = arg1.getAsNumber();
         auto num2 = arg2.getAsNumber();
-        vm->setGlobalRegister(0, num1 + num2);
+        vm->setRegister(f, 0, num1 + num2);
     }else{
         //wrong
-        vm->setGlobalRegister(0, Value::makeNull());
+        vm->setRegister(f, 0, Value::makeNull());
     }
     return Value();
 }
@@ -56,11 +56,10 @@ Value addNumbers(VM* vm) {
 //static Value makeCFunc(std::function<Value(VM*)> func){
 //    return Value(kType_CFUNCTION, new CFunction(func), false);
 //}
-typedef Value (*CFUNC)(VM*);
+typedef Value (*CFUNC)(VM*,CallFrame*);
 static Value makeCFunc(CFUNC func){
     return Value(kType_CFUNCTION, new CFunction(func), false);
 }
-
 
 }
 
@@ -70,7 +69,8 @@ static void test3();
 // 示例使用
 void main_demo21() {
     //using namespace h7l::runtime;
-    test1();
+    //test1();
+    test2();
 }
 
 

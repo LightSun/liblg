@@ -14,6 +14,9 @@
 
 namespace h7l { namespace runtime {
 
+class VM;
+struct CallFrame;
+
 // 函数原型
 struct FunctionProto {
     std::vector<Instruction> instructions;
@@ -22,7 +25,6 @@ struct FunctionProto {
     int numParams;
     int numRegisters;
     std::vector<std::pair<bool, int>> upvDescs; //upvalue描述 (是否是父函数的局部变量, 索引)
-
 
     FunctionProto(const std::vector<Instruction>& instrs,
                   const std::vector<Value>& consts = {},
@@ -41,6 +43,7 @@ class Closure : public BaseObjectType<Closure>{
 public:
     std::shared_ptr<FunctionProto> proto;
     std::vector<std::shared_ptr<Upvalue>> upvalues;
+    std::vector<int> labelPcs;
 
     Closure(std::shared_ptr<FunctionProto> p) : proto(p) {
         upvalues.resize(p->upvDescs.size());
@@ -62,14 +65,12 @@ public:
     }
 };
 
-class VM;
-
 class CFunction: public BaseObjectType<CFunction>{
 public:
-    std::function<Value(VM*)> func;
-    using CFUNC = Value(*)(VM*);
+    std::function<Value(VM*,CallFrame*)> func;
+    using CFUNC = Value(*)(VM*,CallFrame*);
 
-    CFunction(std::function<Value(VM*)> func):func(func){}
+    CFunction(std::function<Value(VM*,CallFrame*)> func):func(func){}
     CFunction(CFUNC func):func(func){}
 
     void printTo(std::stringstream& ss)override{

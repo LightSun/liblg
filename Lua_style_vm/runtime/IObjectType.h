@@ -49,9 +49,11 @@ enum Type{
     kType_VOID,
     kType_NULL,
     kType_TABLE,
+    kType_ARRAY,
     kType_CLOSURE,
     kType_STRING,
     kType_CFUNCTION,
+    kType_EXCEPTION,
     };
 
 //StringRef

@@ -25,12 +25,20 @@ enum OpCode {
     NEWTABLE,   // 创建新表
     GETTABLE,   // 从表中获取值
     SETTABLE,   // 设置表中的值
+    NEWARRAY,
+    GETARRAY,
+    SETARRAY,
+
     CLOSURE,    // 创建闭包
     GETUPVAL,   // 获取upvalue
     SETUPVAL,   // 设置upvalue
     CALL_C,     // 调用C函数
     PRINT,      // 打印寄存器值
-    HALT        // 停止虚拟机
+    HALT,       // 停止虚拟机
+
+    NEWLABEL,
+    JMPLABEL,
+    JMPLABEL_POP,
 };
 
 struct Instruction {

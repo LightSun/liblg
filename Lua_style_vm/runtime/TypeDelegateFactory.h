@@ -6,6 +6,7 @@
 
 namespace h7l { namespace runtime {
 
+
 class TypeDelegateFactory{
 
 public:

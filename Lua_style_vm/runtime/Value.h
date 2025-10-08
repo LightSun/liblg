@@ -8,6 +8,9 @@ namespace h7l { namespace runtime {
 
 class Closure;
 struct Table;
+struct CFunction;
+struct Array;
+struct Exception;
 
 struct Value
 {
@@ -85,6 +88,15 @@ struct Value
     static inline Value makeTable(Table* p){
         return Value(kType_TABLE, (IObjectType*)p, false);
     }
+    static inline Value makeCFunction(CFunction* p){
+        return Value(kType_CFUNCTION, (IObjectType*)p, false);
+    }
+    static inline Value makeArray(Array* p){
+        return Value(kType_ARRAY, (IObjectType*)p, false);
+    }
+    static inline Value makeException(Exception* p){
+        return Value(kType_EXCEPTION, (IObjectType*)p, false);
+    }
     //
     IObjectType* getPtr0()const{
         return (IObjectType*)base.ptr;
@@ -154,6 +166,12 @@ public:
         MED_ASSERT_X(type == kType_BOOL, "must be bool");
         return base.b;
     }
+    bool isArray()const{
+        return type == kType_ARRAY;
+    }
+    bool isTable()const{
+        return type == kType_TABLE;
+    }
     template<typename T>
     T* getPtr()const{
         return (T*)base.ptr;
@@ -169,6 +187,9 @@ public:
     }
     Long getAsLong()const{
         return pri_getAsLong(type, base);
+    }
+    int getAsInt()const{
+        return pri_getAsInt(type, base);
     }
     double getAsNumber()const{
         return pri_getAsNumber(type, base);

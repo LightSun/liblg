@@ -5,6 +5,7 @@
 #include "runtime/TypeDelegateFactory.h"
 #include "runtime/VMTracker.h"
 #include "runtime/Upvalue.h"
+#include "runtime/Array.h"
 
 namespace h7l { namespace runtime {
 
@@ -67,15 +68,21 @@ public:
     VM(): pc(0),running(false) {
         globalRegisters_.resize(50);  //初始寄存器数量
     }
-    Value& getGlobalRegister(int index) {
-        return globalRegisters_[index];
+    Value& getRegister(CallFrame* frame,int index) {
+        if (index >= 0 && index < frame->numReg) {
+             return globalRegisters_[frame->base + index];
+        }
+        MED_ASSERT(false);
     }
-    void setGlobalRegister(int index, const Value& value) {
-        if (index >= 0 && index < globalRegisters_.size()) {
-            globalRegisters_[index] = value;
+    void setRegister(CallFrame* frame,int index, const Value& value) {
+        if (index >= 0 && index < frame->numReg) {
+            globalRegisters_[frame->base + index] = value;
         }
     }
     void execute(std::shared_ptr<FunctionProto> func);
+
+private:
+    void runInst_array(CallFrame& cf, const Instruction& instr);
 
 private:
     //get current reg

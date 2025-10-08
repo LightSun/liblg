@@ -194,13 +194,14 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         }
 
         case NEWTABLE: {
-            getRegister(instr.a) = Value(kType_TABLE, new Table());
+            getRegister(instr.a) = Value::makeTable(new Table());
             frame.pc++;
             trackDiff(instr, {}, instr.a);
             break;
         }
 
         case GETTABLE: {
+            //dst,tab,key
             auto& v1 = getRegister(instr.b); //table
             auto& v2 = getRegister(instr.c); //string or int-like
 
@@ -227,6 +228,7 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         }
 
         case SETTABLE: {
+            //tab,k,v
             auto& tabV = getRegister(instr.a);
             auto& v1 = getRegister(instr.b);
             auto& v2 = getRegister(instr.c);
@@ -243,6 +245,67 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
             trackDiff(instr, {instr.b, instr.c}, instr.a);
             break;
         }
+
+        case NEWARRAY:{
+            //dst, <type>, tab-as-array-shape,
+            auto& reg_t = getRegister(instr.b);
+            if(!reg_t.isIntLike()){
+                //TODO wrong
+                break;
+            }
+            auto& reg_info = getRegister(instr.c);
+            if(reg_info.isTable()){
+                //shape info is from table.
+                auto tab = reg_info.getPtr<Table>();
+                if(tab->getArraySize() > 0){
+                    List<int> shape;
+                    if(!tab->getArrayShapeDynamic(shape)){
+                        //static
+                        auto newArr = Array::New((Type)reg_t.getAsLong(), shape);
+                        getRegister(instr.a) = Value::makeArray(newArr);
+                    }else{
+                        //TODO shape is not fixed. must not reach here. should throw.
+                    }
+                }
+            }
+            frame.pc++;
+            trackDiff(instr, {instr.b, instr.c}, instr.a);
+        }break;
+
+        case SETARRAY:{
+            //arr, index, val
+            auto& reg_a = getRegister(instr.a);
+            auto& reg_b = getRegister(instr.b);
+            auto& reg_c = getRegister(instr.c);
+            if(!reg_b.isIntLike()){
+                //TODO wrong
+                break;
+            }
+            if(reg_a.isArray()){
+                auto ptr = reg_a.getPtr<Array>();
+                ptr->setElement(reg_b.getAsLong(), &reg_c);
+            }else{
+                //throw ?
+            }
+            frame.pc++;
+        }break;
+
+        case GETARRAY:{
+            //dst, arr, index
+            auto& reg_b = getRegister(instr.b);
+            auto& reg_c = getRegister(instr.c);
+            if(!reg_c.isIntLike()){
+                //TODO wrong
+                break;
+            }
+            if(reg_b.isArray()){
+                auto ptr = reg_b.getPtr<Array>();
+                getRegister(instr.a) = ptr->getElement(reg_c.getAsLong());
+            }else{
+                //throw?
+            }
+            frame.pc++;
+        }break;
 
         case CLOSURE: {
             // 创建闭包。 dst, nestedIdx, -
@@ -308,9 +371,9 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
                 //callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
                 callStack.emplace(func, 0, newBase, func->proto->numRegisters);
                 // 复制参数.
-                for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
-                    globalRegisters_[newBase + i] = getRegister(instr.a + 1 + i);
-                }
+                // for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
+                //     globalRegisters_[newBase + i] = getRegister(instr.a + 1 + i);
+                // }
             } else {
                 std::cerr << "Type error: expected function for call\n";
                 frame.pc++;
@@ -320,17 +383,49 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         }
 
         case CALL_C: {
-            auto& v1 = getRegister(instr.b);
+            auto& v1 = getRegister(instr.a);
             auto func = v1.getPtr<CFunction>();
             if(func){
-                auto val = func->func(this);
+                auto val = func->func(this, &frame);
                 if(!val.isVoid()){
-                    getRegister(instr.a) = val;
+                    getRegister(instr.b) = val;
                 }
             }
-            trackDiff(instr, instr.b, -1);
+            frame.pc++;
+            trackDiff(instr, instr.a, -1);
             break;
         }
+
+        case NEWLABEL:{
+            closure->labelPcs.push_back(frame.pc);
+            frame.pc++;
+            trackDiff(instr);
+        }break;
+
+        case JMPLABEL:{
+            //<lable-index>, -,-
+            auto& v1 = getRegister(instr.a);
+            auto idx = v1.getAsInt();
+            if(idx == -1){
+                idx = closure->labelPcs.size() - 1;
+            }
+            frame.pc = closure->labelPcs.at(idx);
+            trackDiff(instr);
+        }break;
+
+        case JMPLABEL_POP:{
+            //jump label then pop label.
+            //<lable-index>, -,-
+            auto& v1 = getRegister(instr.a);
+            auto idx = v1.getAsInt();
+            if(idx < 0){
+                idx = closure->labelPcs.size() + idx;
+            }
+            frame.pc = closure->labelPcs.at(idx);
+            closure->labelPcs.erase(closure->labelPcs.begin() + idx);
+            trackDiff(instr);
+        }break;
+
 
         case RETURN: {
             // 返回到调用者

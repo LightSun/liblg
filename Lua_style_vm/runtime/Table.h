@@ -18,6 +18,45 @@ struct Table: public BaseObjectType<Table>
     std::unordered_map<std::string, Value> fields;
     std::map<int, Value> array;
 
+    int getArraySize(){
+        return array.size();
+    }
+    void setArraySize(int size){
+        {
+            List<int> rmKeys;
+            for(auto& p : array){
+                if(p.first >= size){
+                    rmKeys.push_back(p.first);
+                }
+            }
+            for(auto& k : rmKeys){
+                array.erase(k);
+            }
+        }
+        for(int i = 0 ; i < size ; ++i){
+            auto it = array.find(i);
+            if(it == array.end()){
+                it->second = Value();
+            }
+        }
+    }
+    bool getArrayShapeDynamic(List<int>& shape){
+        bool dynamic = false;
+        int size = array.size();
+        for(int i = 0 ; i < size ; ++i){
+            auto& v = array[i];
+            if(v.isIntLike()){
+                shape.push_back(v.getAsLong());
+            }else{
+                if(!dynamic){
+                    dynamic = true;
+                }
+                shape.push_back(-1);
+            }
+        }
+        return dynamic;
+    }
+
     Value* get(const std::string& key) {
         auto it = fields.find(key);
         if (it != fields.end()) {
