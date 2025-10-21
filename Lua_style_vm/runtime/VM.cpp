@@ -202,6 +202,34 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
     auto closure = frame.closure;
 
     switch (instr.opcode) {
+    case JMP:{
+        //<t_pc>,-,-
+        frame.pc = instr.a;
+        trackDiff(instr);
+    }break;
+
+    case JMPIF:{
+        //<t_pc>,<case>,-
+        auto vb = getRegister(instr.b);
+        if(vb.getBool()){
+            frame.pc = instr.a;
+        }else{
+            frame.pc ++;
+        }
+        trackDiff(instr);
+    }break;
+
+    case JMPNOT:{
+        //<t_pc>,<case>,-
+        auto vb = getRegister(instr.b);
+        if(!vb.getBool()){
+            frame.pc = instr.a;
+        }else{
+            frame.pc ++;
+        }
+        trackDiff(instr);
+    }break;
+
     case NEWLABEL:{
         closure->labelPcs.push_back(frame.pc);
         frame.pc++;
@@ -292,6 +320,7 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
     }
 
     case CALL_C: {
+        //<cfunc>,<target_val>,-
         auto& v1 = getRegister(instr.a);
         auto func = v1.getPtr<CFunction>();
         if(func){
@@ -332,8 +361,26 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
             getRegister(instr.c) = Value::makeNull();
         }
         auto ls = std::make_shared<LoopState>();
+        ls->iter_str = it;
+        ls->tab = tab;
         ls->loopPc = frame.pc + 1;
         frame.loopStates.push(ls);
+        frame.pc ++;
+        trackDiff(instr, instr.a, -1);
+    }break;
+
+    case FORP_NEXT:{
+        auto& v1 = getRegister(instr.a);
+        auto tab = v1.getPtr<Table>();
+        auto& ls = frame.loopStates.top();
+        ls->iter_str++;
+        if(ls->iter_str != tab->fields.end()){
+            getRegister(instr.b) = Value::makeString(ls->iter_str->first);
+            getRegister(instr.c) = ls->iter_str->second;
+        }else{
+            getRegister(instr.b) = Value::makeNull();
+            getRegister(instr.c) = Value::makeNull();
+        }
         frame.pc ++;
         trackDiff(instr, instr.a, -1);
     }break;
@@ -343,15 +390,19 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
         int endCnt = 0;
         auto& ls = frame.loopStates.top();
         for(int i = ls->loopPc; ; ++i){
-            if(frame.getInst(i).opcode == LOOP_END){
+            int op = frame.getInst(i).opcode;
+            if(op == LOOP_END){
                 endCnt ++;
                 if(endCnt == startCnt){
                     frame.pc = i + 1;
                     break;
                 }
-            }else if(frame.getInst(i).opcode == FORI_INIT){
+            }else if(op == FORI_INIT || op == FORP_INIT){
                 startCnt ++;
             }
+        }
+        if(startCnt != endCnt){
+            MED_ASSERT_X(false, "LOOP_BREAK: ill-stat");
         }
         frame.loopStates.pop();
         trackDiff(instr);

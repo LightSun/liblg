@@ -38,7 +38,7 @@ struct CallFrame {
     CallFrame& operator=(CallFrame&& cf){
         this->closure = cf.closure;
         this->pc = cf.pc;
-        this->loopState = cf.loopState;
+        this->loopStates = cf.loopStates;
         this->base = cf.base;
         this->numReg = cf.numReg;
         closure->ref();
@@ -47,7 +47,7 @@ struct CallFrame {
     CallFrame& operator=(const CallFrame& cf){
         this->closure = cf.closure;
         this->pc = cf.pc;
-        this->loopState = cf.loopState;
+        this->loopStates = cf.loopStates;
         this->base = cf.base;
         this->numReg = cf.numReg;
         closure->ref();

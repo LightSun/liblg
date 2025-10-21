@@ -11,7 +11,7 @@ struct LoopState: public BaseObjectType<LoopState>{
     int* start {nullptr};
     int* end {nullptr};
     std::unordered_map<std::string, Value>::iterator iter_str;
-    Table* tab {nullptr};
+    Table* tab {nullptr}; //weak ref
     int loopPc {-1};
     //int loopType {-1}; //fori ?
 

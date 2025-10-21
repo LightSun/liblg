@@ -25,12 +25,18 @@ enum OpCode {
     CALL,       // 函数调用
     CALL_C,     // 调用C函数
     RETURN,     // 从函数返回
+
+    JMPNOT,
+    JMP,
+    JMPIF,
     NEWLABEL,
     JMPLABEL,
     JMPLABEL_IF,    // 条件跳转（真时跳转）
     JMPLABEL_NOT,   // 条件跳转（假时跳转）
+
     FORI_INIT,
     FORP_INIT,
+    FORP_NEXT,
     LOOP_BREAK,
     LOOP_CONTINUE,
     LOOP_END,      //mark inst for loop
