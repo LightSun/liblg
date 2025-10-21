@@ -18,7 +18,8 @@ struct Table: public BaseObjectType<Table>
     std::unordered_map<std::string, Value> fields;
     std::map<int, Value> array;
 
-    int getArraySize(){
+    int getArraySize()const{
+        auto it = fields.begin();
         return array.size();
     }
     void setArraySize(int size){
@@ -40,6 +41,7 @@ struct Table: public BaseObjectType<Table>
             }
         }
     }
+    //1d arr
     bool getArrayShapeDynamic(List<int>& shape){
         bool dynamic = false;
         int size = array.size();

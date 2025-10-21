@@ -35,12 +35,12 @@ enum CompareResult{
 
 enum Type{
     kType_NONE = -1,
-    kType_S8 ,
+    kType_S8,
     kType_U8,
-    kType_S16 ,
-    kType_U16 ,
+    kType_S16,
+    kType_U16,
     kType_S32,
-    kType_U32 ,
+    kType_U32,
     kType_S64,
     kType_U64,
     kType_BOOL,
@@ -54,7 +54,7 @@ enum Type{
     kType_STRING,
     kType_CFUNCTION,
     kType_EXCEPTION,
-    };
+};
 
 //StringRef
 //struct Table

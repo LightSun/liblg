@@ -6,12 +6,14 @@
 #include "runtime/VMTracker.h"
 #include "runtime/Upvalue.h"
 #include "runtime/Array.h"
+#include "runtime/LoopState.h"
 
 namespace h7l { namespace runtime {
 
 // 调用帧
 struct CallFrame {
     Closure* closure;
+    std::stack<std::shared_ptr<LoopState>> loopStates;
     int pc {0};
     int base; // 寄存器基址
     int numReg;
@@ -28,22 +30,15 @@ struct CallFrame {
         }
     }
     CallFrame(CallFrame&& cf){
-        this->closure = cf.closure;
-        this->pc = cf.pc;
-        this->base = cf.base;
-        this->numReg = cf.numReg;
-        closure->ref();
+        operator=(cf);
     }
     CallFrame(const CallFrame& cf){
-        this->closure = cf.closure;
-        this->pc = cf.pc;
-        this->base = cf.base;
-        this->numReg = cf.numReg;
-        closure->ref();
+        operator=(cf);
     }
     CallFrame& operator=(CallFrame&& cf){
         this->closure = cf.closure;
         this->pc = cf.pc;
+        this->loopState = cf.loopState;
         this->base = cf.base;
         this->numReg = cf.numReg;
         closure->ref();
@@ -52,6 +47,7 @@ struct CallFrame {
     CallFrame& operator=(const CallFrame& cf){
         this->closure = cf.closure;
         this->pc = cf.pc;
+        this->loopState = cf.loopState;
         this->base = cf.base;
         this->numReg = cf.numReg;
         closure->ref();
@@ -59,6 +55,9 @@ struct CallFrame {
     }
     int getNumRegs()const{
         return numReg;
+    }
+    Instruction& getInst(int pc){
+        return closure->proto->instructions[pc];
     }
 };
 
@@ -99,6 +98,11 @@ private:
     std::shared_ptr<Upvalue> findOrCreateUpvalue(int stackIndex);
 
 private:
+    void processBaseInst(CallFrame& frame, const Instruction& instr);
+    void processControlInst(CallFrame& frame, const Instruction& instr);
+    void processObjectInst(CallFrame& frame, const Instruction& instr);
+    void processOtherInst(CallFrame& frame, const Instruction& instr);
+
     void trackDiff(const Instruction& ins, CList<int> srcRegs, int dstReg);
     void trackDiff(const Instruction& ins, int srcReg, int dstReg);
     void trackDiff(const Instruction& ins);

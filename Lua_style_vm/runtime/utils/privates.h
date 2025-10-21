@@ -117,11 +117,14 @@ static inline String opcode2Str(int opcode){
     case MUL:{return "MUL";}
     case DIV:{return "DIV";}
     case CONCAT:{return "CONCAT";}
+
     case CALL:{return "CALL";}
     case RETURN:{return "RETURN";}
-    case JMP:{return "JMP";}
-    case JMPIF:{return "JMPIF";}
-    case JMPNOT:{return "JMPNOT";}
+
+    case NEWLABEL:{return "NEW_LAB";}
+    case JMPLABEL:{return "JMP_LAB";}
+    case JMPLABEL_IF:{return "JMP_LAB_IF";}
+    case JMPLABEL_NOT:{return "JMP_LAB_NOT";}
 
     case EQ:{return "EQ";}
     case LE:{return "LE";}
@@ -132,13 +135,15 @@ static inline String opcode2Str(int opcode){
     case CLOSURE:{return "CLOSURE";}
     case GETUPVAL:{return "GETUPVAL";}
     case SETUPVAL:{return "SETUPVAL";}
+
+    case NEWARRAY:{return "NEWARRAY";}
+    case GETARRAY:{return "GETARRAY";}
+    case SETARRAY:{return "SETARRAY";}
+
     case CALL_C:{return "CALL_C";}
     case PRINT:{return "PRINT";}
     case HALT:{return "HALT";}
 
-    case NEWLABEL:{return "NEWLABEL";}
-    case JMPLABEL:{return "JMPLABEL";}
-    case JMPLABEL_POP:{return "JMPLABEL_POP";}
 
     default:
         MED_ASSERT_X(false, "opcode2Str >> support opcode = " << opcode);

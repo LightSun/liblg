@@ -150,6 +150,9 @@ public:
     bool isNullptr()const{
         return type == kType_NULL;
     }
+    bool isBool()const{
+        return type == kType_BOOL;
+    }
     bool isString()const{
         return type == kType_STRING;
     }
@@ -163,7 +166,7 @@ public:
         return isIntLike() || isFloatLike();
     }
     bool getBool()const{
-        MED_ASSERT_X(type == kType_BOOL, "must be bool");
+        //MED_ASSERT_X(type == kType_BOOL, "must be bool");
         return base.b;
     }
     bool isArray()const{
