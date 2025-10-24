@@ -66,11 +66,13 @@ static Value makeCFunc(CFUNC func){
 static void test1();
 static void test2();
 static void test3();
+extern void main_test_const_pool2();
 // 示例使用
 void main_demo21() {
     //using namespace h7l::runtime;
     //test1();
-    test2();
+    //test2();
+    main_test_const_pool2();
 }
 
 
