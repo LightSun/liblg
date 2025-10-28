@@ -19,7 +19,10 @@ struct LoopState: public BaseObjectType<LoopState>{
 
     }
     bool equals(IObjectType*) const override{
-
+        return false;
+    }
+    int hashCode()const override{
+        return 0;
     }
 };
 

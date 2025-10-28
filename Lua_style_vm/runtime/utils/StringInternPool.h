@@ -24,14 +24,23 @@ private:
             }
             return hash;
         }
+        static inline int str_hash(const char* data, size_t len){
+            int var1 = 0;
+            if (len > 0) {
+                for(size_t i = 0 ; i < len ; ++i){
+                    var1 = 31 * var1 + data[i];
+                }
+            }
+            return var1;
+        }
     };
-    using STable = HighPerformanceHashTable<String, StringInfoHash>;
+    using STable = HighPerformanceHashTable<String, uint32_t, StringInfoHash>;
 
-    STable hash_table_ {16, 0.7};
+    STable hash_table_;
 
     // 双重哈希检查
-    bool compareStrings(const char* a, const char* b, size_t length) const {
-        // 快速检查：比较前8个字节
+    static inline bool compareStrings(const char* a, const char* b, size_t length){
+        // quick head-8
         if (length >= 8) {
             uint64_t* a64 = (uint64_t*)a;
             uint64_t* b64 = (uint64_t*)b;
@@ -41,7 +50,10 @@ private:
     }
 
 public:
-    StringInternPool(){}
+    StringInternPool(size_t initial_capacity, double max_load):
+        hash_table_(initial_capacity, max_load){}
+
+    StringInternPool():StringInternPool(16, 0.75f){}
 
     ~StringInternPool() {
     }
@@ -76,7 +88,7 @@ public:
 
     // 获取统计信息
     void getStats(){
-        hash_table_.getCollisionStats();
+        hash_table_.getCollisionStats("string");
     }
 };
 

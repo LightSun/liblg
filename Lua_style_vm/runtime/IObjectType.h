@@ -96,6 +96,8 @@ struct IObjectType
     virtual void printTo(std::stringstream& ss) = 0;
 
     virtual bool equals(IObjectType*) const = 0;
+
+    virtual int hashCode() const = 0;
 };
 
 template<typename T>

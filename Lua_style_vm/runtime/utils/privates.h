@@ -3,6 +3,7 @@
 #include "runtime/IObjectType.h"
 #include "runtime/Instruction.h"
 #include "runtime/utils/primitive_cmp.hpp"
+#include "runtime/utils/Numbers.hpp"
 
 namespace h7l { namespace runtime {
 
@@ -636,6 +637,89 @@ static inline void pri_cast(int srcPriType, int dstPriType, void* srcPtr, void* 
     default:
         MED_ASSERT_X(false, "wrong priType = " << srcPriType);
     }
+}
+
+template<typename T>
+static inline int hashCode0(T var0) {
+    return (int)(var0 ^ unsignedShiftLong(var0, 32));
+}
+static inline int floatToIntBits_wrap(float var0) {
+    int var1 = floatToRawIntBits(var0);
+    if ((var1 & 2139095040) == 2139095040 && (var1 & 8388607) != 0) {
+        var1 = 2143289344;
+    }
+
+    return var1;
+}
+
+static inline int base_hash(int type, void* ptr){
+    switch (type) {
+    case kType_S8:
+    {
+        return *(char*)ptr;
+    }break;
+    case kType_U8:
+    {
+        return *(unsigned char*)ptr;
+    }break;
+    case kType_S16:
+    {
+        return *(short*)ptr;
+    }break;
+    case kType_U16:
+    {
+        return *(unsigned short*)ptr;
+    }break;
+    case kType_S32:
+    {
+        return *(int*)ptr;
+    }break;
+    case kType_U32:
+    {
+        return *(unsigned int*)ptr;
+    }break;
+    case kType_S64:
+    {
+        return hashCode0<Long>(*(Long*)ptr);
+    }break;
+    case kType_U64:
+    {
+        return hashCode0<ULong>(*(ULong*)ptr);
+    }break;
+
+    case kType_FLOAT:
+    {
+        return floatToIntBits_wrap(*(float*)ptr);
+    }break;
+
+    case kType_DOUBLE:
+    {
+        Long val = doubleToLongBits(*(double*)ptr);
+        return hashCode0(val);
+    }break;
+
+    case kType_BOOL:
+    {
+        return (*(char*)ptr) !=0 ? 1231 : 1237;//like java boolean
+    }break;
+
+    case kType_NULL:
+    case kType_VOID:
+    default:
+    {
+        return 0;
+    }break;
+    }
+}
+
+static inline int str_hash(const char* data, size_t len){
+    int var1 = 0;
+    if (len > 0) {
+        for(size_t i = 0 ; i < len ; ++i){
+            var1 = 31 * var1 + data[i];
+        }
+    }
+    return var1;
 }
 
 

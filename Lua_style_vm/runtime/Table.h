@@ -19,7 +19,7 @@ struct Table: public BaseObjectType<Table>
     std::map<int, Value> array;
 
     int getArraySize()const{
-        auto it = fields.begin();
+        //auto it = fields.begin();
         return array.size();
     }
     void setArraySize(int size){
@@ -161,6 +161,22 @@ struct Table: public BaseObjectType<Table>
             }
         }
         return true;
+    }
+
+    int hashCode() const override{
+        int var = 0;
+        if(fields.empty()){
+            for(auto& [k,v] : fields){
+                auto v1 = str_hash(k.data(),k.length());
+                var += v1 ^ v.hashCode();
+            }
+        }else{
+            for(auto& [k,v] : fields){
+                auto v1 = base_hash(kType_S32, (void*)&k);
+                var += v1 ^ v.hashCode();
+            }
+        }
+        return var;
     }
 };
 

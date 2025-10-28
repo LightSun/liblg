@@ -9,6 +9,7 @@
 #include <future>
 
 #include "runtime/IObjectType.h"
+#include "runtime/utils/privates.h"
 
 namespace h7l { namespace runtime {
 
@@ -18,8 +19,8 @@ using CString = const std::string&;
 class StringRef: public BaseObjectType<StringRef>{
 public:
     using u32 = unsigned int;
-    using Long = long long;
-    using ULong = unsigned long long;
+    //using Long = long long;
+    //using ULong = unsigned long long;
     //ref
     explicit StringRef(char* data, u32 start, u32 len);
     explicit StringRef(char* data);
@@ -122,7 +123,6 @@ public:
         return m_validLen;
     }
 
-    int hashCode();
     bool equals(const StringRef& ref) const;
     bool equalsIgnoreCase(const StringRef& ref) const;
 
@@ -140,11 +140,14 @@ public:
     }
     //---------------
     void printTo(std::stringstream& ss) override{
-        ss << toString() << (void*)this;
+        ss << toString();
     }
     bool equals(IObjectType* o) const override{
         StringRef* sr = (StringRef*)o;
         return compareTo(*sr) == 0;
+    }
+    int hashCode()const override{
+        return str_hash(m_data, m_validLen);
     }
 
 private:
@@ -160,11 +163,12 @@ private:
     }
 
 private:
+    bool m_selfOwned {false};
     char* m_data {nullptr};
     unsigned int m_allocLen {0};
     unsigned int m_validLen {0};
-    bool m_selfOwned {false};
 };
+//-------------------
 //-------------------
 inline StringRef::StringRef(u32 len, bool resize){
     alloc0(len + 1);
@@ -344,7 +348,7 @@ inline StringRef& StringRef::append(const StringRef& ref){
 }
 
 //------------------------
-inline StringRef::ULong StringRef::toULong(ULong def, int base){
+inline ULong StringRef::toULong(ULong def, int base){
     auto str = toString();
     try{
         return std::stoull(str, nullptr, base);
@@ -354,7 +358,7 @@ inline StringRef::ULong StringRef::toULong(ULong def, int base){
     }
     return def;
 }
-inline StringRef::Long StringRef::toLong(Long def, int base){
+inline Long StringRef::toLong(Long def, int base){
     auto str = toString();
     try{
         return std::stoll(str, nullptr, base);

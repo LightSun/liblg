@@ -132,6 +132,8 @@ public:
 
     bool equals(IObjectType* _oth) const override;
 
+    int hashCode()const override;
+
     ArrayDesc* getArrayDesc(){
         return desc.get();
     }

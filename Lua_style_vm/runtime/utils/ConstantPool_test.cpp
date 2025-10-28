@@ -24,25 +24,33 @@ static void testHashCollisions() {
     ConstantPool pool;
 
     // 测试1：故意产生冲突的字符串
-    auto colliding_strings = generateCollidingStrings(10);
+//    auto colliding_strings = generateCollidingStrings(10);
 
-    std::cout << "\n测试故意冲突的字符串:" << std::endl;
-    for (const auto& str : colliding_strings) {
-        size_t index = pool.addString(str);
-        std::cout << "添加字符串: '" << str << "' -> 索引: " << index << std::endl;
-    }
+//    std::cout << "\n测试故意冲突的字符串:" << std::endl;
+//    for (const auto& str : colliding_strings) {
+//        size_t index = pool.addString(str);
+//        std::cout << "添加字符串: '" << str << "' -> 索引: " << index << std::endl;
+//    }
 
-    // 测试2：大量随机字符串
-    std::cout << "\n测试大量随机字符串:" << std::endl;
     const int LARGE_TEST_COUNT = 1000;
     std::vector<size_t> indices;
+    // 测试2：大量随机字符串
+//    std::cout << "\n测试大量随机字符串:" << std::endl;
 
+//    for (int i = 0; i < LARGE_TEST_COUNT; ++i) {
+//        std::string random_str = "RandomString_" + std::to_string(rand() % 100);
+//        indices.push_back(pool.addString(random_str));
+//    }
+
+    std::cout << "\n测试大量-字符串:" << std::endl;
     for (int i = 0; i < LARGE_TEST_COUNT; ++i) {
-        std::string random_str = "RandomString_" + std::to_string(rand() % 100);
+        std::string random_str = "RandomString_" + std::to_string(i);
+        //auto hash = str_hash(random_str.data(), random_str.length());
+        //printf("hash  = %d, mod 2048 = %d\n", hash, (hash % 2048));
         indices.push_back(pool.addString(random_str));
     }
 
-    // 测试3：重复字符串
+//    // 测试3：重复字符串
     std::cout << "\n测试重复字符串:" << std::endl;
     size_t first_index = pool.addString("DuplicateString");
     size_t second_index = pool.addString("DuplicateString");
@@ -52,6 +60,9 @@ static void testHashCollisions() {
 
     // 显示统计信息
     pool.getStats();
+//    for(int i = 0 ; i < pool.getObjectCount() ; ++i){
+//        std::cout << i << ": " << pool.getObjectAt(i) << std::endl;
+//    }
 }
 
 }}
@@ -67,13 +78,12 @@ void main_test_const_pool2() {
     // 基本功能测试
     std::cout << "\n\n=== 基本功能测试 ===" << std::endl;
 
-    ConstantPool pool;
+    ConstantPool pool(16, 0.75f);
 
     // 添加各种类型的常量
-    pool.addNil();
-    pool.addBoolean(true);
-    pool.addBoolean(false);
-    pool.addInteger(42);
+    pool.addBool(true);
+    pool.addBool(false);
+    pool.addInt(42);
     pool.addDouble(3.14159);
     pool.addString("Hello, World!");
     pool.addString("Hello, World!"); // 重复

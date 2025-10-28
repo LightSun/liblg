@@ -1,78 +1,68 @@
 #pragma once
 
 #include "runtime/utils/StringInternPool.h"
+#include "runtime/Value.h"
 
 namespace h7l { namespace runtime {
+//struct ValueEquals{
+//    bool operator()(const Value& v1, const Value& v2)const{
+//        if(v1.type == v2.type){
+//            return true;
+//        }
+//        if(v1.type == kType_NULL || v2.type == kType_NULL){
+//            return false;
+//        }
+//        return v1.equals(v2);
+//    }
+//};
 
-enum class ConstantType {
-    NIL,
-    BOOLEAN,
-    INTEGER,
-    DOUBLE,
-    STRING,
-    TABLE,
-    FUNCTION
-};
-
-union ConstantValue {
-    bool boolean;
-    int64_t integer;
-    double number;
-    struct {
-        const char* data;
-        size_t length;
-        uint32_t hash;
-    } string;
-
-    ConstantValue() : integer(0) {}
-};
-
-
-class ConstantObject {
+class TypePool{
 public:
-    virtual ~ConstantObject() = default;
-    virtual ConstantType getType() const = 0;
-    virtual size_t getMemoryUsage() const = 0;
-    virtual bool equals(const ConstantObject* other) const = 0;
-    virtual uint64_t hash() const = 0;
-};
-
-class StringConstant : public ConstantObject {
-private:
-    const char* data_;
-    size_t length_;
-    uint32_t hash_;
-
-public:
-    StringConstant(const char* data, size_t length, uint32_t hash)
-        : data_(data), length_(length), hash_(hash) {}
-
-    ConstantType getType() const override { return ConstantType::STRING; }
-
-    size_t getMemoryUsage() const override {
-        return sizeof(StringConstant) + length_ + 1;
+    TypePool():TypePool(16, 0.75f){}
+    TypePool(size_t initial_capacity, double max_load)
+        :constant_map_(initial_capacity, max_load){
     }
 
-    bool equals(const ConstantObject* other) const override {
-        if (other->getType() != ConstantType::STRING) return false;
-        const StringConstant* str_other = static_cast<const StringConstant*>(other);
-        return length_ == str_other->length_ &&
-               std::memcmp(data_, str_other->data_, length_) == 0;
+    size_t add(const Value& val){
+        std::unique_lock lock(mutex_);
+        //
+        auto hash = val.hashCode();
+        Item item(val.type, hash);
+        //
+        auto ev = constant_map_.find(item);
+        if(ev != nullptr){
+            if(ev->index < pool_.size()){
+                return ev->index;
+            }
+            //hash conflict
+        }
+        item.index = pool_.size();
+        pool_.push_back(val);
+        constant_map_.insert(item);
+        return item.index;
     }
-
-    uint64_t hash() const override {
-        return (static_cast<uint64_t>(hash_) << 32) | length_;
+    const Value& getAt(size_t index)const{
+        std::shared_lock lock(mutex_);
+        return pool_.at(index);
     }
-
-    const char* getData() const { return data_; }
-    size_t getLength() const { return length_; }
-};
-
-class ConstantPool {
+    Value& getAt(size_t index){
+        std::shared_lock lock(mutex_);
+        return pool_.at(index);
+    }
+    size_t size()const{
+        std::shared_lock lock(mutex_);
+        return pool_.size();
+    }
+    void getStats(CString tag){
+        constant_map_.getCollisionStats(tag);
+    }
 private:
     struct Item{
+        int64_t type {kType_NONE};
         size_t index {0};
-        uint64_t hash;
+        int hash;
+        Item(){}
+        Item(int64_t type, int hash):type(type),hash(hash){}
     };
     struct ItemHash{
         size_t operator()(const Item& info)const{
@@ -81,242 +71,181 @@ private:
     };
     struct ItemEQ{
         size_t operator()(const Item& i1, const Item& i2)const{
-            return i1.hash == i2.hash && i1.index == i2.index;
+            return i1.hash == i2.hash && i1.type == i2.type;
         }
     };
-
-    // 常量存储
-    std::vector<ConstantValue> simple_constants_;
-    std::vector<std::shared_ptr<ConstantObject>> complex_constants_;
-
-    // 改进的字符串驻留池
-    StringInternPool string_pool_;
-
-    // 改进的哈希表用于常量去重
-    HighPerformanceHashTable<Item, ItemHash, ItemEQ> constant_map_;
-
-    // 内存使用统计
-    std::atomic<size_t> memory_usage_{0};
-
-    // 线程安全
+    std::vector<Value> pool_;
+    HighPerformanceHashTable<Item, int, ItemHash, ItemEQ> constant_map_;//rm repeat
     mutable std::shared_mutex mutex_;
+};
 
-    // 添加简单常量
-    size_t addSimpleConstant(const ConstantValue& value, ConstantType type) {
-        std::unique_lock lock(mutex_);
-
-        uint64_t hash = computeSimpleHash(value, type);
-        Item kitem;
-        kitem.hash = hash;
-
-        // 使用改进的哈希表查找
-        auto exist_val = constant_map_.find(kitem);
-        if (exist_val) {
-            // 找到相同哈希的条目，需要验证是否真的相同
-            if (exist_val->index < simple_constants_.size() &&
-                compareSimpleConstants(simple_constants_[exist_val->index], value, type)) {
-                return exist_val->index;
-            }
-            // 哈希冲突！需要处理
-            std::cout << "简单常量哈希冲突！类型: " << static_cast<int>(type)
-                      << ", 哈希: " << hash << std::endl;
-        }
-        kitem.index = simple_constants_.size();
-        // add new
-        simple_constants_.push_back(value);
-        constant_map_.insert(kitem);
-
-        memory_usage_.fetch_add(sizeof(ConstantValue), std::memory_order_relaxed);
-
-        return kitem.index;
-    }
-
-    // 添加复杂常量
-    size_t addComplexConstant(std::shared_ptr<ConstantObject> constant) {
-        std::unique_lock lock(mutex_);
-
-        uint64_t hash = constant->hash();
-        Item kitem;
-        kitem.hash = hash;
-
-        // 查找现有常量
-        auto exist_val = constant_map_.find(kitem);
-        if (exist_val) {
-            if (exist_val->index >= simple_constants_.size()) {
-                size_t complex_index = exist_val->index - simple_constants_.size();
-                if (complex_index < complex_constants_.size() &&
-                    complex_constants_[complex_index]->equals(constant.get())) {
-                    return exist_val->index;
-                }
-            }
-
-            // 哈希冲突
-            std::cout << "复杂常量哈希冲突！类型: " << static_cast<int>(constant->getType())
-                      << ", 哈希: " << hash << std::endl;
-        }
-
-        // 添加新常量
-        kitem.index = simple_constants_.size() + complex_constants_.size();
-        complex_constants_.push_back(constant);
-        constant_map_.insert(kitem);
-
-        memory_usage_.fetch_add(constant->getMemoryUsage(), std::memory_order_relaxed);
-
-        return kitem.index;
-    }
-
-    // 计算简单常量的哈希值
-    uint64_t computeSimpleHash(const ConstantValue& value, ConstantType type) const {
-        switch (type) {
-        case ConstantType::NIL:
-            return 0xDEADBEEF; // 特殊的魔法数
-        case ConstantType::BOOLEAN:
-            return value.boolean ? 0xBADF00D : 0xFACEFEED; // 不同的魔法数
-        case ConstantType::INTEGER:
-            // 使用更好的整数哈希
-            {
-                uint64_t x = static_cast<uint64_t>(value.integer);
-                x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
-                x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
-                x = x ^ (x >> 31);
-                return x;
-            }
-
-        case ConstantType::DOUBLE:{
-            // 更好的双精度浮点数哈希
-            static_assert(sizeof(double) == sizeof(uint64_t), "double must be 64 bits");
-            uint64_t bits;
-            std::memcpy(&bits, &value.number, sizeof(double));
-            if (value.number == 0.0) bits = 0; // 标准化+0和-0
-            bits = (bits ^ (bits >> 32)) * 0x45d9f3b3335b369ULL;
-            bits = (bits ^ (bits >> 29)) * 0x45d9f3b3335b369ULL;
-            bits = bits ^ (bits >> 32);
-            return bits;
-        }
-
-        default:
-            return 0;
-        }
-    }
-
-    // 比较简单常量
-    bool compareSimpleConstants(const ConstantValue& a, const ConstantValue& b, ConstantType type) const {
-        switch (type) {
-        case ConstantType::NIL:
-            return true;
-        case ConstantType::BOOLEAN:
-            return a.boolean == b.boolean;
-        case ConstantType::INTEGER:
-            return a.integer == b.integer;
-        case ConstantType::DOUBLE:
-            // 处理浮点数精度问题
-            return std::abs(a.number - b.number) < 1e-15;
-        default:
-            return false;
-        }
-    }
-
+class ConstantPool{
 public:
-    ConstantPool() : constant_map_(16, 0.75) {
-        simple_constants_.reserve(64);
-        complex_constants_.reserve(32);
+    ConstantPool():ConstantPool(16, 0.75f){}
+    ConstantPool(size_t initial_capacity, double max_load)
+        :base_pool_(initial_capacity, max_load),
+        obj_pool_(initial_capacity, max_load),
+        string_pool_(initial_capacity, max_load)
+    {}
+
+    size_t addBool(bool val){
+        return addBase(Value(val));
     }
-
-    // 添加各种常量类型的方法
-    size_t addNil() {
-        ConstantValue value;
-        return addSimpleConstant(value, ConstantType::NIL);
+    size_t addChar(char val){
+        return addBase(Value(val));
     }
-
-    size_t addBoolean(bool b) {
-        ConstantValue value;
-        value.boolean = b;
-        return addSimpleConstant(value, ConstantType::BOOLEAN);
+    size_t addShort(short val){
+        return addBase(Value(val));
     }
-
-    size_t addInteger(int64_t i) {
-        ConstantValue value;
-        value.integer = i;
-        return addSimpleConstant(value, ConstantType::INTEGER);
+    size_t addInt(int val){
+        return addBase(Value(val));
     }
-
-    size_t addDouble(double d) {
-        ConstantValue value;
-        value.number = d;
-        return addSimpleConstant(value, ConstantType::DOUBLE);
+    size_t addLong(Long val){
+        return addBase(Value(val));
     }
-
-    size_t addString(const char* data, size_t length) {
-        const char* interned_data = string_pool_.intern(data, length);
-        uint32_t hash = 0;
-
-        const uint32_t prime = 16777619u;
-        hash = 2166136261u;
-        for (size_t i = 0; i < length; ++i) {
-            hash ^= static_cast<uint32_t>(interned_data[i]);
-            hash *= prime;
+    size_t addFloat(float val){
+        return addBase(Value(val));
+    }
+    size_t addDouble(double val){
+        return addBase(Value(val));
+    }
+    size_t addObject(const Value& val){
+        return addObject0(val);
+    }
+    size_t addString(CString str){
+        char* sptr = nullptr;
+        {
+            std::unique_lock lock(mutex_);
+            sptr = (char*)string_pool_.intern(str);
         }
-
-        auto string_constant = std::make_shared<StringConstant>(interned_data, length, hash);
-        return addComplexConstant(string_constant);
+        return addObject0(Value(kType_STRING, new StringRef(sptr, 0, str.length())));
     }
 
-    size_t addString(const char* cstr) {
-        return addString(cstr, std::strlen(cstr));
+    Value& getBaseAt(size_t index){
+        return base_pool_.getAt(index);
+    }
+    const Value& getBaseAt(size_t index)const{
+        return base_pool_.getAt(index);
+    }
+    int getBaseCount()const{
+        return base_pool_.size();
     }
 
-    size_t addString(const std::string& str) {
-        return addString(str.data(), str.length());
+    Value& getObjectAt(size_t index){
+        return obj_pool_.getAt(index);
     }
-
-    // 获取常量
-    ConstantValue getSimpleConstant(size_t index) const {
-        std::shared_lock lock(mutex_);
-        if (index < simple_constants_.size()) {
-            return simple_constants_[index];
-        }
-        return ConstantValue();
+    const Value& getObjectAt(size_t index)const{
+        return obj_pool_.getAt(index);
     }
-
-    std::shared_ptr<ConstantObject> getComplexConstant(size_t index) const {
-        std::shared_lock lock(mutex_);
-        if (index >= simple_constants_.size()) {
-            size_t complex_index = index - simple_constants_.size();
-            if (complex_index < complex_constants_.size()) {
-                return complex_constants_[complex_index];
-            }
-        }
-        return nullptr;
-    }
-
-    const char* getStringData(size_t index) const {
-        auto constant = getComplexConstant(index);
-        if (auto string_constant = std::dynamic_pointer_cast<StringConstant>(constant)) {
-            return string_constant->getData();
-        }
-        return nullptr;
-    }
-
-    // 统计信息
-    size_t getMemoryUsage() const {
-        return memory_usage_.load(std::memory_order_relaxed);
+    int getObjectCount()const{
+        return obj_pool_.size();
     }
 
     size_t getConstantCount() const {
-        std::shared_lock lock(mutex_);
-        return simple_constants_.size() + complex_constants_.size();
+        return base_pool_.size() + obj_pool_.size();
     }
-
     void getStats(){
         std::cout << "\n=== 常量池统计 ===" << std::endl;
         std::cout << "总常量数: " << getConstantCount() << std::endl;
-        std::cout << "内存使用: " << getMemoryUsage() << " 字节" << std::endl;
 
-        constant_map_.getCollisionStats();
+        base_pool_.getStats("primitive");
+        obj_pool_.getStats("object");
         string_pool_.getStats();
     }
+
+private:
+    size_t addBase(const Value& val){
+        return base_pool_.add(val);
+    }
+    size_t addObject0(const Value& val){
+        return obj_pool_.add(val);
+    }
+    char* addToStringPool(CString str){
+        std::unique_lock lock(mutex_);
+        return(char*)string_pool_.intern(str);
+    }
+
+private:
+    friend class ConstantPoolPlan;
+    TypePool base_pool_;
+    TypePool obj_pool_;
+    StringInternPool string_pool_;
+    mutable std::shared_mutex mutex_;
 };
-//------------------------------
+
+//-------------
+class ConstantPoolPlan{
+public:
+    size_t* addBool(bool val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addChar(char val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addShort(short val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addInt(int val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addLong(Long val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addFloat(float val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addDouble(double val){
+        return &base_plans_.emplace_back(val).index;
+    }
+    size_t* addObject(const Value& val){
+        return &obj_plans_.emplace_back(val).index;
+    }
+    size_t* addObject(CString str){
+        auto sptr = pool_.addToStringPool(str);
+        return &obj_plans_.emplace_back(Value(kType_STRING,
+                          new StringRef(sptr, 0, str.length()))).index;
+    }
+    Value& getAt(size_t index){
+        auto& basePool = pool_.base_pool_;
+        if(index < basePool.size()){
+            return basePool.getAt(index);
+        }
+        index -= basePool.size();
+        return pool_.obj_pool_.getAt(index);
+    }
+    const Value& getAt(size_t index)const{
+        auto& basePool = pool_.base_pool_;
+        if(index < basePool.size()){
+            return basePool.getAt(index);
+        }
+        index -= basePool.size();
+        return pool_.obj_pool_.getAt(index);
+    }
+    size_t size()const{
+        return pool_.base_pool_.size() + pool_.obj_pool_.size();
+    }
+    void execute(){
+        for(auto& p : base_plans_){
+            p.index = pool_.base_pool_.add(p.val);
+        }
+        const auto baseSize = pool_.base_pool_.size();
+        for(auto& p : obj_plans_){
+            p.index = baseSize + pool_.obj_pool_.add(p.val);
+        }
+        base_plans_.clear();
+        obj_plans_.clear();
+    }
+
+private:
+    struct Plan{
+        Value val;
+        size_t index {(size_t)-1};
+        Plan(const Value& val):val(val){}
+    };
+    ConstantPool pool_;
+    List<Plan> base_plans_;
+    List<Plan> obj_plans_;
+};
 
 
 }}

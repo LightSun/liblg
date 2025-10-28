@@ -13,7 +13,7 @@ void Array::printTo(std::stringstream& ss){
         }else{
             ss << CMD_LINE;
             auto ptr = (IObjectType**)getDataPtr();
-            for(int i = 0 ; i < desc->eleCount ; ++i){
+            for(size_t i = 0 ; i < desc->eleCount ; ++i){
                 if(ptr[i]){
                     ptr[i]->printTo(ss);
                 }else{
@@ -49,7 +49,7 @@ bool Array::equals(IObjectType* _oth) const{
     }else{
         auto ptr = (IObjectType**)getDataPtr();
         auto ptr2 = (IObjectType**)oth->getDataPtr();
-        for(int i = 0 ; i < desc->eleCount ; ++i){
+        for(int i = 0 ; i < (int)desc->eleCount ; ++i){
             if(ptr[i] == nullptr){
                 if(ptr2[i] != nullptr){
                     return false;
@@ -63,6 +63,27 @@ bool Array::equals(IObjectType* _oth) const{
         }
         return true;
     }
+}
+int Array::hashCode()const{
+    int var = 0;
+    if(pri_is_base_type(eleType)){
+        auto eleSize = pri_size(eleType);
+        auto ptr = getDataPtr();
+        for(int i = 0 ; i < (int)desc->eleCount ; ++i){
+            auto dstPtr = ptr + i * eleSize;
+            var = 31 * var + base_hash(eleType, dstPtr);
+        }
+    }else{
+        auto ptr = (IObjectType**)getDataPtr();
+        for(int i = 0 ; i < (int)desc->eleCount ; ++i){
+            if(ptr[i]){
+                var = 31 * var + ptr[i]->hashCode();
+            }else{
+                var = 31 * var;
+            }
+        }
+    }
+    return var;
 }
 
 

@@ -21,7 +21,7 @@ struct CallFrame;
 struct FunctionProto {
     std::vector<Instruction> instructions;
     std::vector<Value> constants;
-    std::vector<std::shared_ptr<FunctionProto>> nestedFunctions; // 嵌套函数
+    std::vector<std::shared_ptr<FunctionProto>> nestedFunctions; //嵌套函数
     int numParams;
     int numRegisters;
     std::vector<std::pair<bool, int>> upvDescs; //upvalue描述 (是否是父函数的局部变量, 索引)
@@ -63,6 +63,10 @@ public:
     bool equals(IObjectType* oth) const override{
         return this == oth;
     }
+    int hashCode()const override{
+        void* ptr = (void*)this;
+        return base_hash(kType_S64, ptr);
+    }
 };
 
 class CFunction: public BaseObjectType<CFunction>{
@@ -78,6 +82,10 @@ public:
     }
     bool equals(IObjectType* oth) const override{
         return this == oth;
+    }
+    int hashCode()const override{
+        void* ptr = (void*)this;
+        return base_hash(kType_S64, ptr);
     }
 };
 

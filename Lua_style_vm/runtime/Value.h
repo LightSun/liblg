@@ -235,6 +235,16 @@ public:
         os << ss.str();
         return os;
     }
+    int hashCode()const{
+        if(type == kType_NULL || type == kType_VOID){
+            return 0;
+        }
+        if(type > kType_NULL){
+            return getPtr0()->hashCode();
+        }else{
+            return base_hash(type, (void*)&base.s64);
+        }
+    }
 };
 
 }}
