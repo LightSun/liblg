@@ -18,19 +18,20 @@ class VM;
 struct CallFrame;
 
 // 函数原型
-struct FunctionProto {
+struct FunctionProto{
+    int modIndex {0};
     std::vector<Instruction> instructions;
-    std::vector<Value> constants;
+    std::vector<int> constIndexes;
     std::vector<std::shared_ptr<FunctionProto>> nestedFunctions; //嵌套函数
     int numParams;
     int numRegisters;
     std::vector<std::pair<bool, int>> upvDescs; //upvalue描述 (是否是父函数的局部变量, 索引)
 
     FunctionProto(const std::vector<Instruction>& instrs,
-                  const std::vector<Value>& consts = {},
+                  const std::vector<int>& constIndexes = {},
                   const std::vector<std::shared_ptr<FunctionProto>>& nested = {},
                   int params = 0, int regs = 10)
-        : instructions(instrs), constants(consts), nestedFunctions(nested),
+        : instructions(instrs), constIndexes(constIndexes), nestedFunctions(nested),
         numParams(params), numRegisters(regs){}
 
     void addUpvalueDesc(bool isParentlocal, int index){

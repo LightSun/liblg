@@ -51,6 +51,9 @@ struct CallFrame {
     int getNumRegs()const{
         return numReg;
     }
+    int getModuleIndex()const{
+        return closure->proto->modIndex;
+    }
     Instruction& getInst(int pc){
         return closure->proto->instructions[pc];
     }

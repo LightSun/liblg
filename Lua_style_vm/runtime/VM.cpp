@@ -12,12 +12,12 @@ struct ClosureDeleter{
 };
 
 void VM::execute(std::shared_ptr<FunctionProto> func){
-    callStack.emplace(new Closure(func), 0, 0, func->numRegisters);
+    callStack_.emplace(new Closure(func), 0, 0, func->numRegisters);
     running = true;
 
     // 主执行循环
-    while (running && !callStack.empty()) {
-        CallFrame& frame = callStack.top();
+    while (running && !callStack_.empty()) {
+        CallFrame& frame = callStack_.top();
         auto closure = frame.closure;
         pc = frame.pc;
 
@@ -25,10 +25,10 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
             fprintf(stderr, "pc >= instructions.size()\n");
             // 函数结束，关闭upvalues
             closeUpvaluesAbove(frame.base);
-            callStack.pop();
-            if (!callStack.empty()) {
+            callStack_.pop();
+            if (!callStack_.empty()) {
                 // 返回调用者
-                CallFrame& caller = callStack.top();
+                CallFrame& caller = callStack_.top();
                 caller.pc++; // 继续执行下一条指令
             }
             continue;
@@ -82,8 +82,9 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
 
     switch (instr.opcode) {
     case LOADK: {
-        if (instr.b < (int)closure->proto->constants.size()) {
-            getRegister(instr.a) = closure->proto->constants[instr.b];
+        auto& pool = const_pool_->at(frame.getModuleIndex());
+        if (instr.b < (int)pool.size()) {
+            getRegister(instr.a) = pool.getAt(instr.b);
         } else {
             std::cerr << "Constant index out of bounds: " << instr.b << std::endl;
         }
@@ -288,9 +289,9 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
     case RETURN: {
         // 返回到调用者
         closeUpvaluesAbove(frame.base);
-        callStack.pop();
-        if (!callStack.empty()) {
-            CallFrame& caller = callStack.top();
+        callStack_.pop();
+        if (!callStack_.empty()) {
+            CallFrame& caller = callStack_.top();
             caller.pc++; // 继续执行下一条指令
         }
         trackDiff(instr);
@@ -306,7 +307,7 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
             int newBase = frame.base + frame.getNumRegs();
             printf(" >> newBase = %d\n", newBase);
             //callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
-            callStack.emplace(func, 0, newBase, func->proto->numRegisters);
+            callStack_.emplace(func, 0, newBase, func->proto->numRegisters);
             // 复制参数.
             // for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
             //     globalRegisters_[newBase + i] = getRegister(instr.a + 1 + i);

@@ -19,8 +19,8 @@ namespace h7l { namespace runtime {
 class TypePool{
 public:
     TypePool():TypePool(16, 0.75f){}
-    TypePool(size_t initial_capacity, double max_load)
-        :constant_map_(initial_capacity, max_load){
+    TypePool(size_t initial_capacity, double load_factor)
+        :constant_map_(initial_capacity, load_factor){
     }
 
     size_t add(const Value& val){
@@ -162,7 +162,7 @@ private:
     }
     char* addToStringPool(CString str){
         std::unique_lock lock(mutex_);
-        return(char*)string_pool_.intern(str);
+        return (char*)string_pool_.intern(str);
     }
 
 private:
@@ -246,7 +246,6 @@ private:
     List<Plan> base_plans_;
     List<Plan> obj_plans_;
 };
-
 
 }}
 
