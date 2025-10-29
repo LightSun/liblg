@@ -18,6 +18,12 @@ struct ArrayDesc{
 
     ArrayDesc(U32 s): baseSize(s){}
 
+    void removeOneEle(){
+        MED_ASSERT(shapes.size()==1);
+        --shapes[0];
+        -- eleCount;
+    }
+
     void setShape(CList<int> shapes){
         if(!shapes.empty()){
             this->shapes = shapes;
@@ -103,30 +109,19 @@ private:
     std::shared_ptr<ArrayDesc> desc;
 
 public:
+    struct DiffInfo{
+        bool typeEq {false};
+        int cnt {0}; // > 1 means n-eq. 0 means the same. 1 means can merge.
+        int dimIndex {-1}; //dim index
+
+        bool shouldMerge()const{
+            return typeEq && cnt < 2;
+        }
+    };
+
     ~Array(){}
 
-    static Array* New(Type eleType, CList<int> shapes){
-        const int unitSize = pri_size(eleType);
-        auto desc = std::make_shared<ArrayDesc>(unitSize);
-        desc->setShape(shapes);
-        auto actDataSize = desc->eleCount * unitSize;
-        const int ptrSize = sizeof (void*);
-        int left = actDataSize % ptrSize;
-        size_t alignSize;
-        if(left == 0){
-            alignSize = actDataSize;
-        }else{
-            alignSize = actDataSize + ptrSize - left;
-        }
-        Array* array = new Array();
-        auto sd = std::shared_ptr<ShareData>(new ShareData(alignSize), [array](ShareData*){
-            array->delEleRef();
-        });
-        array->eleType = eleType;
-        array->data = sd;
-        array->desc = desc;
-        return array;
-    }
+    static Array* New(Type eleType, CList<int> shapes);
 
     void printTo(std::stringstream& ss)override;
 
@@ -144,7 +139,7 @@ public:
     char* getDataPtr()const{
         return data->data + offset;
     }
-    List<int>& shapes(){
+    List<int>& getShapes(){
         return desc->shapes;
     }
     //false if type not match.(base: non-base)
@@ -169,7 +164,7 @@ public:
         }
         return true;
     }
-
+    //may be sub-arr
     Value getElement(int index){
         if(desc->strides.size() > 1){
             auto arr = subArray(index);
@@ -192,8 +187,132 @@ public:
             }
         }
     }
+    Value getGlobalElement(int index){
+        auto srcPtr = getGlobalElementPtr(index);
+        //
+        if(pri_isPointerLike(eleType)){
+            return Value(eleType, (IObjectType*)srcPtr, true);
+        }else{
+            Value val;
+            val.type = eleType;
+            pri_cast(eleType, eleType, srcPtr, &val.base);
+            return val;
+        }
+    }
+    void setGlobalElement(int index, Value* val){
+        char* ptr1 = getDataPtr();
+        auto srcPtr = ptr1 + index * pri_size(eleType);
+        if(pri_isPointerLike(eleType)){
+            auto src = (IObjectType*)srcPtr;
+            if(src){
+                src->unref();
+            }
+            auto ptr = val->getPtr0();
+            if(ptr){
+                ptr->ref();
+            }
+            ((void**)ptr1)[index] = ptr;
+        }else{
+            pri_cast(val->type, eleType, &val->base, srcPtr);
+        }
+    }
+    DiffInfo computeDiffForMerge(Array* arr){
+        if(this->eleType != arr->eleType){
+            return DiffInfo();
+        }
+        auto& shapes1 = getShapes();
+        auto& shapes2 = arr->getShapes();
+        if(shapes1.size() != shapes2.size()){
+            return DiffInfo();
+        }
+        int diffCnt = 0;
+        int diffIndex = -1;
+        for(size_t i = 0 ; i < shapes1.size(); ++i){
+            if(shapes1[i] != shapes2[i]){
+                diffCnt ++;
+                if(diffIndex < 0){
+                    diffIndex = i;
+                }
+            }
+        }
+        DiffInfo info;
+        info.typeEq = true;
+        info.cnt = diffCnt;
+        info.dimIndex = diffIndex;
+        return info;
+    }
+    //2-3-1 + 2-3-2 -> 2-3-3
+
+    //2-1-3 + 2-2-3 -> 2-3-3
+    //   [1,2,3]     [1,2,3] [4,5,6]
+    //   [4,5,6]     [7,8,9] [10,11,12]
+    //result
+    //   [1,2,3] [1,2,3] [4,5,6]
+    //   [4,5,6] [7,8,9] [10,11,12]
+
+    //1-2-3 + 2-2-3 -> 3-2-3
+    //   [1,2,3] [4,5,6]      [1,2,3] [4,5,6]
+    //                        [7,8,9] [10,11,12]
+    // result
+    // [1,2,3] [4,5,6]
+    // [1,2,3] [4,5,6]
+    // [7,8,9] [10,11,12]
+    Value merge(Array* arr, int dim);
+
+    //only support dim = 1
+    //before call this, should call isElementComparable() first.
+    Value removeSame(Array* arr);
+
+    //only support dim = 1
+    //before call this, should call isElementComparable() first.
+    void sameIndexes(Array* arr, List<int>& v1, List<int>& v2);
+
+    //only support dim = 1
+    //before call this, should call isElementComparable() first.
+    List<int> notContainsIndexes(Array* arr);
+
+    //only support dim = 1
+    //before call this, should call isElementComparable() first.
+    List<int> sameIndexes(Array* arr);
+
+    bool isElementComparable(Array* arr)const{
+        if(pri_is_base_type(eleType)){
+            if(pri_is_base_type(arr->eleType)){
+                return true;
+            }
+            return false;
+        }else{
+            if(eleType == kType_NULL){
+                return pri_isPointerLike(arr->eleType);
+            }
+            return eleType == arr->eleType;
+        }
+    }
 
 private:
+    int indexOfBase(int dstType,void* ptr2){
+        for(size_t i = 0 ; i < desc->eleCount ; ++i){
+            auto ptr1 = getGlobalElementPtr(i);
+            if(pri_base_type_cmp(eleType, dstType, ptr1, ptr2) == 0){
+                return i;
+            }
+        }
+        return -1;
+    }
+    int indexOfPtr(void* ptr2){
+        auto p2 = (IObjectType*)ptr2;
+        for(size_t i = 0 ; i < desc->eleCount ; ++i){
+            auto p1 = (IObjectType*)getGlobalElementPtr(i);
+            if(p1 != nullptr){
+                if(p2 && p1->equals(p2)){
+                    return i;
+                }
+            }else if(p2 == nullptr){
+                return i;
+            }
+        }
+        return -1;
+    }
     Array* subArray(int index){
         U32 curOffset = 0;
         const int unitSize = pri_size(eleType);
@@ -211,10 +330,52 @@ private:
             return nullptr;
         }
     }
+    char* getGlobalElementPtr(int index){
+        char* ptr1 = getDataPtr();
+        return ptr1 + index * pri_size(eleType);
+    }
+    void setGlobalElementPtr(int index, void* _srcP){
+        if(pri_isPointerLike(eleType)){
+            auto srcP = (IObjectType*)_srcP;
+            char* ptr1 = getDataPtr();
+            auto preVal = ((IObjectType**)ptr1)[index];
+            if(preVal){
+                preVal->unref();
+            }
+            if(srcP){
+                srcP->ref();
+            }
+            ((IObjectType**)ptr1)[index] = srcP;
+        }else{
+            auto srcPtr = getGlobalElementPtr(index);
+            pri_cast(eleType, eleType, _srcP, srcPtr);
+        }
+    }
+    //only for 1D
+    bool removeGlobalElementAt(int index){
+        if(index >= (int)getArrayDesc()->eleCount){
+            return false;
+        }
+        char* ptr1 = getDataPtr();
+        if(pri_isPointerLike(eleType)){
+            auto preVal = ((IObjectType**)ptr1)[index];
+            if(preVal){
+                preVal->unref();
+                ((IObjectType**)ptr1)[index] = nullptr;
+            }
+        }
+        auto baseSize = pri_size(eleType);
+        auto moveSize = baseSize * (getArrayDesc()->eleCount - index - 1);
+        auto srcOffset = baseSize * (index + 1);
+        auto dstOffset = baseSize * index;
+        memmove(ptr1 + dstOffset, ptr1 + srcOffset, moveSize);
+        getArrayDesc()->removeOneEle();
+        return true;
+    }
     void delEleRef(){
         if(eleType != kType_VOID && !pri_is_base_type(eleType) && isDataValid()){
             auto ptr = (IObjectType**)getDataPtr();
-            for(int i = 0 ; i < desc->eleCount ; ++i){
+            for(size_t i = 0 ; i < desc->eleCount ; ++i){
                 if(ptr[i] != nullptr){
                     ptr[i]->unref();
                 }
@@ -222,6 +383,12 @@ private:
             memset(ptr, 0, desc->eleCount * sizeof(void*));
         }
     }
+
+    void printTo_default(std::stringstream& ss);
+    void printTo_1(std::stringstream& ss);
+    void printTo_2(std::stringstream& ss);
+    void printTo_3(std::stringstream& ss);
+    void printToImpl(std::stringstream& ss, int index);
 };
 
 

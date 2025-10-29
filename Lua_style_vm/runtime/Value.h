@@ -156,6 +156,9 @@ public:
     bool isString()const{
         return type == kType_STRING;
     }
+    bool isPointerLike()const{
+        return type >= kType_NULL;
+    }
     bool isIntLike()const{
         return pri_isIntLike(type);
     }

@@ -6,6 +6,7 @@
 #include "runtime/VMTracker.h"
 #include "runtime/Upvalue.h"
 #include "runtime/Array.h"
+#include "runtime/Exception.h"
 #include "runtime/utils/ModuleConstantPool.h"
 
 namespace h7l { namespace runtime {
@@ -68,6 +69,7 @@ private:
     std::unordered_map<int, std::shared_ptr<Upvalue>> openUpvalues_;
     TypeDelegateFactory m_factory;
     VMTracker m_tracker;
+    sk_sp<Exception> m_excep;
 };
 
 }}

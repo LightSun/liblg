@@ -8,7 +8,6 @@ namespace h7l { namespace runtime {
 enum OpCode {
     BASE_START,
     LOADK,      // 将常量加载到寄存器
-    LOADBOOL,   // 加载布尔值
     MOVE,       // 在寄存器间移动值
     ADD,        // 加法
     SUB,        // 减法

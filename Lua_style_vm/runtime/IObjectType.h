@@ -121,7 +121,7 @@ struct BaseObjectType: public IObjectType{
 //---------
 
 template <typename T> static inline T* SkRef(T* obj) {
-    SkASSERT(obj);
+    MED_ASSERT(obj);
     obj->ref();
     return obj;
 }

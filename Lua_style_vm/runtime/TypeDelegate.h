@@ -21,6 +21,7 @@ public:
     virtual Value concat(Value& v1, Value& v2) = 0;
 
     virtual Value lessThan(Value& v1, Value& v2) = 0;
+
     virtual Value lessEquals(Value& v1, Value& v2) = 0;
 
 };

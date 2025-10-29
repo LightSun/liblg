@@ -111,7 +111,6 @@ namespace h7l { namespace runtime {
 static inline String opcode2Str(int opcode){
     switch (opcode) {
     case LOADK:{return "LOADK";}
-    case LOADBOOL:{return "LOADBOOL";}
     case MOVE:{return "MOVE";}
     case ADD:{return "ADD";}
     case SUB:{return "SUB";}
@@ -165,6 +164,10 @@ static inline bool pri_isIntLike(int type){
         return true;
     }
     return false;
+}
+
+static inline bool pri_isPointerLike(int type){
+    return type >= kType_NULL;
 }
 
 static inline Long pri_getAsLong(int type, const TypeValue& base){
@@ -306,6 +309,77 @@ static inline void val_printTo(int type, TypeValue& base, std::stringstream& ss)
     default:
     {
         base.ptr->printTo(ss);
+    }break;
+    }
+}
+
+static inline void val_printRaw(int type, void* ptr, std::stringstream& ss){
+    switch (type) {
+    case kType_S8:
+    {
+        ss << *(char*)ptr;
+    }break;
+    case kType_U8:
+    {
+        ss << *(unsigned char*)ptr;
+    }break;
+    case kType_S16:
+    {
+        ss << *(short*)ptr;
+    }break;
+    case kType_U16:
+    {
+        ss << *(unsigned short*)ptr;
+    }break;
+    case kType_S32:
+    {
+        ss << *(int*)ptr;
+    }break;
+    case kType_U32:
+    {
+        ss << *(unsigned int*)ptr;
+    }break;
+    case kType_S64:
+    {
+        ss << *(Long*)ptr;
+    }break;
+    case kType_U64:
+    {
+        ss << *(ULong*)ptr;
+    }break;
+
+    case kType_FLOAT:
+    {
+        ss << *(float*)ptr;
+    }break;
+
+    case kType_DOUBLE:
+    {
+        ss << *(double*)ptr;
+    }break;
+
+    case kType_BOOL:
+    {
+        ss << *(bool*)ptr;
+    }break;
+
+    case kType_NULL:
+    {
+        ss << "nullptr";
+    }break;
+
+    case kType_VOID:
+    {
+        ss << "void";
+    }break;
+
+    default:
+    {
+        if(ptr){
+            ((IObjectType*)ptr)->printTo(ss);
+        }else{
+            ss << "nullptr";
+        }
     }break;
     }
 }

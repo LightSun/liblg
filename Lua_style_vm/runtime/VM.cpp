@@ -82,25 +82,26 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
 
     switch (instr.opcode) {
     case LOADK: {
+        //dst_reg, src_idx, -
         auto& pool = const_pool_->at(frame.getModuleIndex());
-        if (instr.b < (int)pool.size()) {
+        if(pool.isInvalid()){
+            m_excep = sk_sp(Exception::make(instr.opcode, "ConstPool invalid"));
+        }else if (instr.b < (int)pool.size()) {
             getRegister(instr.a) = pool.getAt(instr.b);
         } else {
-            std::cerr << "Constant index out of bounds: " << instr.b << std::endl;
+            std::stringstream ss;
+            ss << "Constant index out of bounds: ";
+            ss << "index = " << instr.b << ", ";
+            ss << "size = " << pool.size();
+            m_excep = sk_sp(Exception::make(instr.opcode, ss.str()));
         }
         frame.pc++;
         trackDiff(instr, {}, instr.a);
         break;
     }
 
-    case LOADBOOL: {
-        getRegister(instr.a) = static_cast<bool>(instr.b);
-        frame.pc++;
-        trackDiff(instr, {}, instr.a);
-        break;
-    }
-
     case MOVE: {
+        //dst_reg, src_reg, -
         getRegister(instr.a) = getRegister(instr.b);
         frame.pc++;
         trackDiff(instr, instr.b, instr.a);
@@ -108,6 +109,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case ADD: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -120,6 +122,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case CONCAT: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -132,6 +135,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case SUB: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -144,6 +148,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case MUL: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -156,6 +161,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case DIV: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -168,6 +174,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 //--------
     case EQ: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         //
@@ -178,6 +185,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case LT: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);

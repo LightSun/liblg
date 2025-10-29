@@ -236,6 +236,13 @@ public:
         obj_plans_.clear();
     }
 
+    void markInvalid(){
+        invalid_ = true;
+    }
+    bool isInvalid()const{
+        return invalid_;
+    }
+
 private:
     struct Plan{
         Value val;
@@ -245,6 +252,7 @@ private:
     ConstantPool pool_;
     List<Plan> base_plans_;
     List<Plan> obj_plans_;
+    bool invalid_ {false};
 };
 
 }}

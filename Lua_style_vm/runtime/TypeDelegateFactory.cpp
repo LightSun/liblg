@@ -5,6 +5,7 @@
 #include "runtime/impl/TableTypeDelegate.h"
 #include "runtime/impl/CFunctionTypeDelegate.h"
 #include "runtime/impl/ClosureTypeDelegate.h"
+#include "runtime/impl/ArrayTypeDelegate.h"
 
 namespace h7l { namespace runtime {
 
@@ -26,6 +27,7 @@ TypeDelegateFactory::TypeDelegateFactory(){
     m_map[kType_TABLE] = std::make_shared<TableTypeDelegate>();
     m_map[kType_CLOSURE] = std::make_shared<ClosureTypeDelegate>();
     m_map[kType_CFUNCTION] = std::make_shared<CFunctionTypeDelegate>();
+    m_map[kType_ARRAY] = std::make_shared<ArrayTypeDelegate>();
 }
 
 
