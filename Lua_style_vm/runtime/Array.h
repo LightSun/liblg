@@ -18,6 +18,10 @@ struct ArrayDesc{
 
     ArrayDesc(U32 s): baseSize(s){}
 
+    friend bool operator==(const ArrayDesc& o1, const ArrayDesc& o2){
+        return o1.equals(o2);
+    }
+
     void removeOneEle(){
         MED_ASSERT(shapes.size()==1);
         --shapes[0];
@@ -62,7 +66,7 @@ struct ArrayDesc{
     void copyTo(ArrayDesc* dst){
         *dst = *this;
     }
-    bool equals(ArrayDesc& oth){
+    bool equals(const ArrayDesc& oth)const{
         if(this->baseSize != oth.baseSize){
             return false;
         }
@@ -119,7 +123,9 @@ public:
         }
     };
 
-    ~Array(){}
+    ~Array(){
+        //printf("~Array\n");
+    }
 
     static Array* New(Type eleType, CList<int> shapes);
 
@@ -129,10 +135,18 @@ public:
 
     int hashCode()const override;
 
-    ArrayDesc* getArrayDesc(){
+    int getBaseElementType()const{
+        return eleType;
+    }
+    U32 getBaseElementCount()const{
+        return desc->eleCount;
+    }
+    ArrayDesc* getArrayDesc()const{
         return desc.get();
     }
-
+    int getDimCount()const{
+        return desc->shapes.size();
+    }
     bool isDataValid()const{
         return data != nullptr;
     }
@@ -175,14 +189,13 @@ public:
             }
         }else{
             if(pri_is_base_type(eleType)){
-                char* srcPtr = (getDataPtr() + desc->strides[0]) + index * pri_size(eleType);
+                char* srcPtr = getDataPtr() + index * pri_size(eleType);
                 Value val;
                 val.type = eleType;
                 pri_cast(eleType, eleType, srcPtr, &val.base);
                 return val;
             }else{
-                char* dstPtr = (getDataPtr() + desc->strides[0]);
-                auto ptr = ((IObjectType**)dstPtr)[index];
+                auto ptr = ((IObjectType**)getDataPtr())[index];
                 return Value(eleType, ptr, true);
             }
         }

@@ -231,6 +231,11 @@ public:
         printTo(ss);
         std::cout << ss.str() << std::endl;
     }
+    String toString(){
+        std::stringstream ss;
+        printTo(ss);
+        return ss.str();
+    }
     friend std::ostream& operator<<(std::ostream& os, const Value& bni){
         auto& b = ((Value&)bni);
         std::stringstream ss;
@@ -249,5 +254,9 @@ public:
         }
     }
 };
+
+inline bool operator==(const Value& a, const Value& b) /*noexcept*/ {
+    return a.equals(b);
+}
 
 }}

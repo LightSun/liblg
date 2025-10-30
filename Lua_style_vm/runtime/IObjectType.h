@@ -93,6 +93,16 @@ struct IObjectType
             delete this;
         }
     }
+    void print(){
+        std::stringstream ss;
+        printTo(ss);
+        std::cout << ss.str() << std::endl;
+    }
+    String toString(){
+        std::stringstream ss;
+        printTo(ss);
+        return ss.str();
+    }
     virtual void printTo(std::stringstream& ss) = 0;
 
     virtual bool equals(IObjectType*) const = 0;
@@ -103,11 +113,6 @@ struct IObjectType
 template<typename T>
 struct BaseObjectType: public IObjectType{
 
-    void print(){
-        std::stringstream ss;
-        printTo(ss);
-        std::cout << ss.str() << std::endl;
-    }
     friend std::ostream& operator<<(std::ostream& os, const T& bni){
         auto& b = ((T&)bni);
         std::stringstream ss;

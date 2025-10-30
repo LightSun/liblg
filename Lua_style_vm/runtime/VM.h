@@ -11,13 +11,20 @@
 
 namespace h7l { namespace runtime {
 
+
 class VM
 {
 public:
+    VM():VM(std::make_shared<ModuleConstantPool>()){
+    }
     VM(std::shared_ptr<ModuleConstantPool> pool):
         const_pool_(pool),pc(0),running(false) {
         globalRegisters_.resize(50);  //初始寄存器数量
     }
+    ConstantPoolPlan& getDefautConstantPool(){
+        return (*const_pool_)[0];
+    }
+
     Value& getRegister(CallFrame* frame,int index) {
         if (index >= 0 && index < frame->numReg) {
              return globalRegisters_[frame->base + index];

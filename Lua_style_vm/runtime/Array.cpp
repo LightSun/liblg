@@ -194,11 +194,12 @@ bool Array::equals(IObjectType* _oth) const{
     if(this->eleType != oth->eleType){
         return false;
     }
-    if(this->desc != oth->desc){
+    if(!this->desc->equals(*oth->desc)){
         return false;
     }
     if(pri_is_base_type(eleType)){
-        return pri_base_type_array_eqs(eleType, getDataPtr(), oth->getDataPtr(), desc->eleCount);
+        return pri_base_type_array_eqs(eleType, getDataPtr(),
+                                       oth->getDataPtr(), desc->eleCount);
     }else{
         auto ptr = (IObjectType**)getDataPtr();
         auto ptr2 = (IObjectType**)oth->getDataPtr();
@@ -272,17 +273,18 @@ void Array::printTo_2(std::stringstream& ss){
     ss << "[" << CMD_LINE;
     auto& shapes = getShapes();
     auto& strides = getArrayDesc()->strides;
+    const auto baseSize = pri_size(eleType);
     for (int i = 0; i < shapes[0]; ++i) {
         ss << " [";
         //
-        int offset1 = strides[0] * i;
+        int offset1 = strides[0] / baseSize * i;
         for (int j = 0; j < shapes[1]; ++j) {
             printToImpl(ss, offset1 + j);
             if (j < shapes[1] - 1){
                 ss << ",";
             }
         }
-        ss << " ]";
+        ss << "]";
         if (i < shapes[0] - 1) ss << ",";
         ss << CMD_LINE;
     }
@@ -292,13 +294,15 @@ void Array::printTo_3(std::stringstream& ss){
     ss << "[" << CMD_LINE;
     auto& shapes = getShapes();
     auto& strides = getArrayDesc()->strides;
+    const auto baseSize = pri_size(eleType);
+    //
     for (int i = 0; i < shapes[0]; ++i) {
         ss << " [" << CMD_LINE;
         //
-        int offset1 = strides[0] * i;
+        int offset1 = strides[0] / baseSize * i;
         for (int j = 0; j < shapes[1]; ++j) {
             ss << "  [";
-            int offset2 = offset1 + strides[1] * j;
+            int offset2 = offset1 + strides[1] / baseSize * j;
             for (int k = 0; k < shapes[2]; ++k) {
                 printToImpl(ss, offset2 + k);
                 if (k < shapes[2] - 1){

@@ -75,7 +75,7 @@ void main_demo21() {
     main_test_const_pool2();
 }
 
-
+/*
 void test1(){
     using namespace demo21;
     using VM = h7l::runtime::VM;
@@ -166,9 +166,9 @@ void test2(){
     VM vm2;
     // 将C函数放入常量表
     auto cFuncProto = std::const_pointer_cast<FunctionProto>(cFunctionDemo);
-    cFuncProto->constants[3] = makeCFunc(printNumber);
-    cFuncProto->constants[4] = makeCFunc(squareRoot);
-    cFuncProto->constants[6] = makeCFunc(addNumbers);
+//    cFuncProto->constants[3] = makeCFunc(printNumber);
+//    cFuncProto->constants[4] = makeCFunc(squareRoot);
+//    cFuncProto->constants[6] = makeCFunc(addNumbers);
 
     vm2.execute(cFunctionDemo);
 
@@ -277,3 +277,4 @@ void test3(){
     VM vm3;
     vm3.execute(useFactoryProto);
 }
+*/
