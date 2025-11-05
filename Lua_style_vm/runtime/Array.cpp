@@ -28,6 +28,63 @@ Array* Array::New(Type eleType, CList<int> shapes){
     return array;
 }
 
+bool Array::setElement(int index, Value* val,String* errorMsg){
+    if(desc->strides.size() > 1){
+        if(!val->isArray()){
+            if(errorMsg){
+                *errorMsg = "Array: setElement need a sub-array. but provide is not.";
+            }
+            return false;
+        }
+        if(!val->isNullptr() && !checkElementTypeMatch(
+                val->getPtr<Array>()->getBaseElementType(), errorMsg)){
+            return false;
+        }
+        if(index >= getShapes()[0]){
+            if(errorMsg){
+                char buf[256];
+                snprintf(buf, 256, "Array: index(%d) out of range(%d).",
+                         index, getShapes()[0]);
+                *errorMsg = buf;
+            }
+            return false;
+        }
+        auto inArr = val->getPtr<Array>();
+        //sub arr copy.
+        auto subArr = subArray(index);
+        if(subArr){
+            if(subArr->getBaseElementCount() == inArr->getBaseElementCount()){
+                inArr->copyTo(subArr);
+                return true;
+            }else{
+                if(errorMsg){
+                    *errorMsg = "Array: base-element-count not-equals.";
+                }
+            }
+        }else{
+            if(errorMsg){
+                *errorMsg = "Array: current array is 1d.";
+            }
+        }
+        return false;
+    }else{
+        if(!checkElementTypeMatch(val->type, errorMsg)){
+            return false;
+        }
+        if(index < (int)getBaseElementCount()){
+            setGlobalElement(index, val);
+        }else{
+            if(errorMsg){
+                char buf[256];
+                snprintf(buf, 256, "Array: index(%d) out of range(%d).",
+                         index, getBaseElementCount());
+                *errorMsg = buf;
+            }
+        }
+    }
+    return true;
+}
+
 //dim = 2
 //2-3-1 + 2-3-2 -> 2-3-3
 //  [1] [2] [3]       [1,2] [3,4]  [5,6]
@@ -324,6 +381,30 @@ void Array::printTo_3(std::stringstream& ss){
 void Array::printToImpl(std::stringstream& ss, int index){
     auto ptr = getGlobalElementPtr(index);
     val_printRaw(eleType, ptr, ss);
+}
+bool Array::checkElementTypeMatch(int othType, String* errorMsg){
+    bool base1 = pri_is_base_type(eleType);
+    bool base2 = pri_is_base_type(othType);
+    if(base1 && !base2){
+        if(errorMsg){
+            *errorMsg = "Array: checkTypeMatch() type mismatch(base1 && !base2).";
+        }
+        return false;
+    }
+    if(!base1 && base2){
+        if(errorMsg){
+            *errorMsg = "Array: checkTypeMatch() type mismatch(!base1 && base2).";
+        }
+        return false;
+    }
+    //extend ?
+//    if(!base1 && !base2 && othType != kType_NULL && eleType != othType){
+//        if(errorMsg){
+//            *errorMsg = "Array: checkTypeMatch() type mismatch(!base1 && base2).";
+//        }
+//        return false;
+//    }
+    return true;
 }
 
 }}

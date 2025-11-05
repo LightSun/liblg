@@ -52,6 +52,22 @@ struct ArrayTester{
         REQUIRE(subArr1.toString() == "[\n [1,2,3,4],\n [5,6,7,8],\n [9,10,11,12]\n]");
         auto subArr2 = arr->getElement(1);
         REQUIRE(subArr2.toString() == "[\n [13,14,15,16],\n [17,18,19,20],\n [21,22,23,24]\n]");
+        auto ssub1 = subArr1.getPtr<Array>()->getElement(0);
+        ssub1.print();
+        //
+        auto inArr = Array::New(kType_S32, {4});
+        for(size_t i = 0 ; i < inArr->getBaseElementCount() ; ++i){
+            Value val(i + 1000);
+            inArr->setGlobalElement(i, &val);
+        }
+        //test set sub-arr
+        auto inValue = Value::makeArray(inArr);
+        String msg;
+        if(!subArr1.getPtr<Array>()->setElement(0, &inValue, &msg)){
+            fprintf(stderr, "setElement(0,xxx) failed. msg = %s.\n", msg.data());
+        }else{
+            ssub1.print();
+        }
     }
 };
 }

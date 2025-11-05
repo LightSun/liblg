@@ -156,28 +156,8 @@ public:
     List<int>& getShapes(){
         return desc->shapes;
     }
-    //false if type not match.(base: non-base)
-    bool setElement(int index, Value* val){
-        int stride = desc->strides[0];
-        char* ptr1 = (getDataPtr() + stride);
-        if(pri_is_base_type(val->type)){
-            if(!pri_is_base_type(eleType)){
-                return false;
-            }
-            char* dstPtr = ptr1 + index * pri_size(eleType);
-            pri_cast(val->type, eleType, &val->base, dstPtr);
-        }else{
-            if(pri_is_base_type(eleType)){
-                return false;
-            }
-            auto ptr = val->getPtr0();
-            if(ptr){
-                ptr->ref();
-            }
-            ((void**)ptr1)[index] = ptr;
-        }
-        return true;
-    }
+    bool setElement(int index, Value* val,String* errorMsg = nullptr);
+
     //may be sub-arr
     Value getElement(int index){
         if(desc->strides.size() > 1){
@@ -301,7 +281,19 @@ public:
             return eleType == arr->eleType;
         }
     }
-
+    void copyTo(Array* arr){
+        auto size = getBaseElementCount();
+        for(U32 i = 0 ; i < size ; ++i){
+            auto val = getGlobalElement(i);
+            arr->setGlobalElement(i, &val);
+        }
+    }
+    Array* copy(){
+        std::unique_ptr<Array> arr = std::unique_ptr<Array>(
+            Array::New(eleType, desc->shapes));
+        copyTo(arr.get());
+        return arr.release();
+    }
 private:
     int indexOfBase(int dstType,void* ptr2){
         for(size_t i = 0 ; i < desc->eleCount ; ++i){
@@ -402,6 +394,7 @@ private:
     void printTo_2(std::stringstream& ss);
     void printTo_3(std::stringstream& ss);
     void printToImpl(std::stringstream& ss, int index);
+    bool checkElementTypeMatch(int type, String* msg);
 };
 
 
