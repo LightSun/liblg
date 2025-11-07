@@ -39,7 +39,7 @@ struct ArrayTester{
         REQUIRE(subArr2.toString() == "[4,5,6]");
     }
     void test_subArray3(){
-        auto arr = std::unique_ptr<Array>(Array::New(kType_S32, {2,3,4}));
+        auto arr = createArray({2,3,4}, 1);
         auto cnt = arr->getBaseElementCount();
         for(size_t i = 0 ; i < cnt ; ++i){
             Value val(i + 1);
@@ -69,6 +69,28 @@ struct ArrayTester{
             ssub1.print();
         }
     }
+    void testMerge(){
+        auto arr1 = createArray({2,3,1}, 1);
+        auto arr2 = createArray({2,3,2}, 100);
+        auto info = arr1->computeDiffForMerge(arr2.get());
+        if(info.shouldMerge()){
+            auto arr3 = arr1->merge(arr2.get(), info.dimIndex);
+            arr3.print();
+        }
+    }
+
+private:
+    std::unique_ptr<Array> createArray(CList<int> shapes, int firstEleVal){
+        auto arr = std::unique_ptr<Array>(Array::New(kType_S32, shapes));
+        auto cnt = arr->getBaseElementCount();
+        for(size_t i = 0 ; i < cnt ; ++i){
+            Value val(i + firstEleVal);
+            arr->setGlobalElement(i, &val);
+            auto val3 = arr->getGlobalElement(i);
+            REQUIRE(val == val3);
+        }
+        return arr;
+    }
 };
 }
 
@@ -76,5 +98,6 @@ TEST_CASE( "test_array", "[Array]" ) {
     test::ArrayTester tester;
     //tester.test_simple();
     //tester.test_subArray2();
-    tester.test_subArray3();
+    //tester.test_subArray3();
+    tester.testMerge();
 }

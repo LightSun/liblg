@@ -22,6 +22,14 @@ struct ArrayDesc{
         return o1.equals(o2);
     }
 
+    int getTotalElementCntAtDim(int dim)const{
+        int cnt = 1;
+        for(int i = 0 ; i < dim ; ++i){
+            cnt *= shapes[i];
+        }
+        return cnt;
+    }
+
     void removeOneEle(){
         MED_ASSERT(shapes.size()==1);
         --shapes[0];
@@ -336,10 +344,12 @@ private:
         }
     }
     char* getGlobalElementPtr(int index){
+        MED_ASSERT(index < (int)desc->eleCount);
         char* ptr1 = getDataPtr();
         return ptr1 + index * pri_size(eleType);
     }
     void setGlobalElementPtr(int index, void* _srcP){
+        MED_ASSERT(index < (int)desc->eleCount);
         if(pri_isPointerLike(eleType)){
             auto srcP = (IObjectType*)_srcP;
             char* ptr1 = getDataPtr();

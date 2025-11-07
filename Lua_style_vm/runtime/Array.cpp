@@ -130,10 +130,11 @@ Value Array::merge(Array* arr, int dim){
             }
         }
     }else{
-        auto tStride = karr->getArrayDesc()->strides[dim];
-        auto curStride = getArrayDesc()->strides[dim];
-        auto othStride = arr->getArrayDesc()->strides[dim];
+        auto tStride = karr->getArrayDesc()->getTotalElementCntAtDim(dim);
+        auto curStride = getArrayDesc()->getTotalElementCntAtDim(dim);
+        auto othStride = arr->getArrayDesc()->getTotalElementCntAtDim(dim);
         int tCnt = karr->getArrayDesc()->eleCount / tStride;
+        //TODO
         for(int lp = 0 ; lp < tCnt ; ++lp){
             int baseDstIdx = lp * tStride;
             for(int i = 0 ; i < curStride; ++i){
