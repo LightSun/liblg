@@ -18,7 +18,7 @@ struct ArrayTester{
             auto val3 = arr->getGlobalElement(i);
             REQUIRE(val == val3);
         }
-        arr->print();
+        //arr->print();
         REQUIRE(arr->getBaseElementType() == kType_S32);
         REQUIRE(arr->toString() == "[1,2,3,4,5,6,7,8,9,10]");
     }
@@ -31,7 +31,7 @@ struct ArrayTester{
             auto val3 = arr->getGlobalElement(i);
             REQUIRE(val == val3);
         }
-        arr->print();
+        //arr->print();
         auto subArr1 = arr->getElement(0);
         auto subArr2 = arr->getElement(1);
         //subArr.print();
@@ -47,13 +47,14 @@ struct ArrayTester{
             auto val3 = arr->getGlobalElement(i);
             REQUIRE(val == val3);
         }
-        arr->print();
+        //arr->print();
         auto subArr1 = arr->getElement(0);
         REQUIRE(subArr1.toString() == "[\n [1,2,3,4],\n [5,6,7,8],\n [9,10,11,12]\n]");
         auto subArr2 = arr->getElement(1);
         REQUIRE(subArr2.toString() == "[\n [13,14,15,16],\n [17,18,19,20],\n [21,22,23,24]\n]");
         auto ssub1 = subArr1.getPtr<Array>()->getElement(0);
-        ssub1.print();
+        //ssub1.print();
+        REQUIRE(ssub1.toString() == "[1,2,3,4]");
         //
         auto inArr = Array::New(kType_S32, {4});
         for(size_t i = 0 ; i < inArr->getBaseElementCount() ; ++i){
@@ -66,16 +67,83 @@ struct ArrayTester{
         if(!subArr1.getPtr<Array>()->setElement(0, &inValue, &msg)){
             fprintf(stderr, "setElement(0,xxx) failed. msg = %s.\n", msg.data());
         }else{
-            ssub1.print();
+            //ssub1.print();
+            REQUIRE(ssub1.toString() == "[1000,1001,1002,1003]");
         }
     }
-    void testMerge(){
+    void testMerge1(){
         auto arr1 = createArray({2,3,1}, 1);
-        auto arr2 = createArray({2,3,2}, 100);
+        auto arr2 = createArray({2,3,2}, 101);
         auto info = arr1->computeDiffForMerge(arr2.get());
         if(info.shouldMerge()){
             auto arr3 = arr1->merge(arr2.get(), info.dimIndex);
-            arr3.print();
+            //arr3.print();
+            String str = R"(
+                            [
+                             [
+                              [1,101,102],
+                              [2,103,104],
+                              [3,105,106]
+                             ],
+                             [
+                              [4,107,108],
+                              [5,109,110],
+                              [6,111,112]
+                             ]
+                            ]
+                         )";
+            auto dstA = std::unique_ptr<Array>(Array::NewFromSimpleStr(str, kType_S32));
+            REQUIRE(arr3.toString() == dstA->toString());
+        }
+    }
+    void testMerge2(){
+        auto arr1 = createArray({2,1,3}, 1);
+        auto arr2 = createArray({2,2,3}, 101);
+        auto info = arr1->computeDiffForMerge(arr2.get());
+        if(info.shouldMerge()){
+            auto arr3 = arr1->merge(arr2.get(), info.dimIndex);
+            //arr3.print();
+            String str = R"([
+                         [
+                          [1,2,3],
+                          [101,102,103],
+                          [104,105,106]
+                         ],
+                         [
+                          [4,5,6],
+                          [107,108,109],
+                          [110,111,112]
+                         ]
+                        ])";
+            auto dstA = std::unique_ptr<Array>(Array::NewFromSimpleStr(str, kType_S32));
+            REQUIRE(arr3.toString() == dstA->toString());
+        }
+    }
+    void testMerge3(){
+        auto arr1 = createArray({1,2,3}, 1);
+        auto arr2 = createArray({2,2,3}, 101);
+        auto info = arr1->computeDiffForMerge(arr2.get());
+        if(info.shouldMerge()){
+            auto arr3 = arr1->merge(arr2.get(), info.dimIndex);
+            //arr3.print();
+            String str = R"(
+                            [
+                             [
+                              [1,2,3],
+                              [4,5,6]
+                             ],
+                             [
+                              [101,102,103],
+                              [104,105,106]
+                             ],
+                             [
+                              [107,108,109],
+                              [110,111,112]
+                             ]
+                            ]
+                        )";
+            auto dstA = std::unique_ptr<Array>(Array::NewFromSimpleStr(str, kType_S32));
+            REQUIRE(arr3.toString() == dstA->toString());
         }
     }
 
@@ -96,8 +164,10 @@ private:
 
 TEST_CASE( "test_array", "[Array]" ) {
     test::ArrayTester tester;
-    //tester.test_simple();
-    //tester.test_subArray2();
-    //tester.test_subArray3();
-    tester.testMerge();
+    tester.test_simple();
+    tester.test_subArray2();
+    tester.test_subArray3();
+    tester.testMerge1();
+    tester.testMerge2();
+    tester.testMerge3();
 }

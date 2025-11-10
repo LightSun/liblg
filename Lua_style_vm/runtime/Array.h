@@ -22,12 +22,26 @@ struct ArrayDesc{
         return o1.equals(o2);
     }
 
-    int getTotalElementCntAtDim(int dim)const{
+    int getElementCntPreDim(int dim)const{
+        if(dim == -1){
+            dim = shapes.size() - 1;
+        }
         int cnt = 1;
         for(int i = 0 ; i < dim ; ++i){
             cnt *= shapes[i];
         }
         return cnt;
+    }
+    //incDim: include this dim or not.
+    int getElementCntPostDim(int dim)const{
+        int cnt = 1;
+        for(int i = dim; i < (int)shapes.size() ; ++i){
+            cnt *= shapes[i];
+        }
+        return cnt;
+    }
+    int getLastElementCnt()const{
+        return shapes.back();
     }
 
     void removeOneEle(){
@@ -136,6 +150,7 @@ public:
     }
 
     static Array* New(Type eleType, CList<int> shapes);
+    static Array* NewFromSimpleStr(CString str, Type eleType);
 
     void printTo(std::stringstream& ss)override;
 
@@ -227,19 +242,19 @@ public:
             return DiffInfo();
         }
         int diffCnt = 0;
-        int diffIndex = -1;
+        int diffI = -1;
         for(size_t i = 0 ; i < shapes1.size(); ++i){
             if(shapes1[i] != shapes2[i]){
                 diffCnt ++;
-                if(diffIndex < 0){
-                    diffIndex = i;
+                if(diffI < 0){
+                    diffI = i;
                 }
             }
         }
         DiffInfo info;
         info.typeEq = true;
         info.cnt = diffCnt;
-        info.dimIndex = diffIndex;
+        info.dimIndex = diffI;
         return info;
     }
     //2-3-1 + 2-3-2 -> 2-3-3

@@ -1,9 +1,12 @@
 #include <memory.h>
 #include <iostream>
 #include "runtime/Array.h"
+#include "runtime/utils/ArrayParser.h"
 //#include "runtime/common_base.h"
 
 namespace h7l { namespace runtime {
+
+
 
 Array* Array::New(Type eleType, CList<int> shapes){
     const int unitSize = pri_size(eleType);
@@ -26,6 +29,57 @@ Array* Array::New(Type eleType, CList<int> shapes){
     array->data = sd;
     array->desc = desc;
     return array;
+}
+
+Array* Array::NewFromSimpleStr(CString str0, Type eleType){
+    auto str = SimpleArrayParser::removeBlank(str0);
+    int dimC = SimpleArrayParser::getArrayDimCnt(str);
+    List<int> shapes;
+    switch (eleType) {
+    case kType_S32:{
+        List<int> eles;
+        if(SimpleArrayParser::parseInt(str, dimC, shapes, eles)){
+            auto arr = New(eleType, shapes);
+            for(int i = 0 ;i < (int)eles.size(); ++i){
+                arr->setGlobalElementPtr(i, &eles[i]);
+            }
+            return arr;
+        }else{
+            return nullptr;
+        }
+    }break;
+
+    case kType_FLOAT:{
+        List<float> eles;
+        if(SimpleArrayParser::parseFloat(str, dimC, shapes, eles)){
+            auto arr = New(eleType, shapes);
+            for(int i = 0 ;i < (int)eles.size(); ++i){
+                arr->setGlobalElementPtr(i, &eles[i]);
+            }
+            return arr;
+        }else{
+            return nullptr;
+        }
+    }break;
+
+    case kType_DOUBLE:{
+        List<double> eles;
+        if(SimpleArrayParser::parseDouble(str, dimC, shapes, eles)){
+            auto arr = New(eleType, shapes);
+            for(int i = 0 ;i < (int)eles.size(); ++i){
+                arr->setGlobalElementPtr(i, &eles[i]);
+            }
+            return arr;
+        }else{
+            return nullptr;
+        }
+    }break;
+
+    default:
+        //
+        fprintf(stderr, "current not support type = %d\n", eleType);
+        return nullptr;
+    }
 }
 
 bool Array::setElement(int index, Value* val,String* errorMsg){
@@ -109,16 +163,17 @@ bool Array::setElement(int index, Value* val,String* errorMsg){
 // [1,2,3] [4,5,6]
 // [1,2,3] [4,5,6]
 // [7,8,9] [10,11,12]
-Value Array::merge(Array* arr, int dim){
+Value Array::merge(Array* arr, int dim){ //dim -> 2-3-1 -> 0 means 1, 2 means 2
     if(dim < 0){
         dim = 0;
     }
-    auto& shapes = getShapes();
-    auto tshapes = shapes;
+    //
+    auto tshapes = getShapes();
     tshapes[dim] += arr->getShapes()[dim];
     //
     auto karr = std::unique_ptr<Array>(New(eleType, tshapes));
     if(dim == 0){
+        //max dim
         auto curSize = getArrayDesc()->eleCount;
         for(size_t i = 0; i < karr->desc->eleCount; ++i){
             if(i < curSize){
@@ -129,12 +184,13 @@ Value Array::merge(Array* arr, int dim){
                 karr->setGlobalElementPtr(i, curPtr);
             }
         }
-    }else{
-        auto tStride = karr->getArrayDesc()->getTotalElementCntAtDim(dim);
-        auto curStride = getArrayDesc()->getTotalElementCntAtDim(dim);
-        auto othStride = arr->getArrayDesc()->getTotalElementCntAtDim(dim);
-        int tCnt = karr->getArrayDesc()->eleCount / tStride;
-        //TODO
+    }else if(dim == (int)tshapes.size() - 1){
+        //lowest dim
+        auto tStride = karr->getArrayDesc()->getLastElementCnt();
+        auto curStride = getArrayDesc()->getLastElementCnt();
+        auto othStride = arr->getArrayDesc()->getLastElementCnt();
+        int tCnt = karr->getArrayDesc()->getElementCntPreDim(-1);
+        //
         for(int lp = 0 ; lp < tCnt ; ++lp){
             int baseDstIdx = lp * tStride;
             for(int i = 0 ; i < curStride; ++i){
@@ -146,6 +202,27 @@ Value Array::merge(Array* arr, int dim){
             for(int i = 0 ; i < othStride; ++i){
                 int srcIdx = lp * othStride + i;
                 int dstIdx = baseDstIdx + curStride + i;
+                auto curPtr = arr->getGlobalElementPtr(srcIdx);
+                karr->setGlobalElementPtr(dstIdx, curPtr);
+            }
+        }
+    }else{
+        int tCnt = karr->getArrayDesc()->getElementCntPreDim(dim);
+        auto curEvCnt = getArrayDesc()->getElementCntPostDim(dim);
+        auto othEvCnt = arr->getArrayDesc()->getElementCntPostDim(dim);
+        int tcvCnt = karr->getArrayDesc()->eleCount / tCnt;
+        for(int lp = 0 ; lp < tCnt ; ++lp){
+            int baseDstIdx = lp * tcvCnt;
+            for(int i = 0 ; i < curEvCnt; ++i){
+                int srcIdx = lp * curEvCnt + i;
+                int dstIdx = baseDstIdx + i;
+                auto curPtr = getGlobalElementPtr(srcIdx);
+                karr->setGlobalElementPtr(dstIdx, curPtr);
+            }
+            baseDstIdx += curEvCnt;
+            for(int i = 0 ; i < othEvCnt; ++i){
+                int srcIdx = lp * othEvCnt + i;
+                int dstIdx = baseDstIdx + i;
                 auto curPtr = arr->getGlobalElementPtr(srcIdx);
                 karr->setGlobalElementPtr(dstIdx, curPtr);
             }
