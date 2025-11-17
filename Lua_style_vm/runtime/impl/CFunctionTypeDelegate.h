@@ -14,7 +14,6 @@ public:
     DEF_TD_DISABLE_FUNC(div);
     DEF_TD_DISABLE_FUNC(lessThan);
     DEF_TD_DISABLE_FUNC(lessEquals);
-    DEF_TD_DISABLE_FUNC(concat);
 };
 
 

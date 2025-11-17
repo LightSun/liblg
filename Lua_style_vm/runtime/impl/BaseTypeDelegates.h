@@ -3,10 +3,6 @@
 #include "runtime/TypeDelegate.h"
 
 #define PRITIVE_TypeDelegate_IMPL(fn)\
-Value concat(Value& /*v1*/, Value& /*v2*/)override{\
-    MED_ASSERT(false);\
-    return Value();\
-}\
 Value add(Value& v1, Value& v2)override{\
     return Value(v1.base.fn + v2.base.fn);\
 }\

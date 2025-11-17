@@ -24,8 +24,7 @@ void VM::execute(std::shared_ptr<FunctionProto> func){
         if (pc >= (int)closure->proto->instructions.size()) {
             fprintf(stderr, "pc >= instructions.size()\n");
             // 函数结束，关闭upvalues
-            closeUpvaluesAbove(frame.base);
-            callStack_.pop();
+            closeAndPopFrame(frame);
             if (!callStack_.empty()) {
                 // 返回调用者
                 CallFrame& caller = callStack_.top();
@@ -65,6 +64,11 @@ void VM::closeUpvaluesAbove(int stackIndex){
     for (int index : toRemove) {
         openUpvalues_.erase(index);
     }
+}
+void VM::closeAndPopFrame(CallFrame& frame){
+    closeUpvaluesAbove(frame.base);
+    globalRegisters_.sub(frame.numReg);
+    callStack_.pop();
 }
 std::shared_ptr<Upvalue> VM::findOrCreateUpvalue(int stackIndex) {
     printf("findOrCreateUpvalue >> stackIndex = %d\n", stackIndex);
@@ -115,19 +119,6 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         auto td = m_factory.getTypeDelegate(v1.type);
         if(td != nullptr){
             getRegister(instr.a) = td->add(v1, v2);
-        }
-        frame.pc++;
-        trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
-
-    case CONCAT: {
-        //dst_reg, src1_reg, src2_reg
-        auto& v1 = getRegister(instr.b);
-        auto& v2 = getRegister(instr.c);
-        auto td = m_factory.getTypeDelegate(v1.type);
-        if(td != nullptr){
-            getRegister(instr.a) = td->concat(v1, v2);
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
@@ -196,6 +187,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
     }
 
     case LE: {
+        //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
         auto& v2 = getRegister(instr.c);
         auto td = m_factory.getTypeDelegate(v1.type);
@@ -295,9 +287,13 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
     }break;
 
     case RETURN: {
-        // 返回到调用者
-        closeUpvaluesAbove(frame.base);
-        callStack_.pop();
+        // <ret_reg>,-,-
+        // -1 is the return reg.
+        if(instr.a >= 0){
+            globalRegisters_[frame.base - 1] = getRegister(instr.a);
+        }
+        //
+        closeAndPopFrame(frame);
         if (!callStack_.empty()) {
             CallFrame& caller = callStack_.top();
             caller.pc++; // 继续执行下一条指令
@@ -311,8 +307,9 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
         auto& v1 = getRegister(instr.a);
         auto func = v1.getPtr<Closure>();
         if (func) {
-            // 创建新的调用帧
-            int newBase = frame.base + frame.getNumRegs();
+            globalRegisters_.add(frame.getNumRegs() + 1);
+            // create new call-frame. + 1 for return val.
+            int newBase = frame.base + frame.getNumRegs() + 1;
             printf(" >> newBase = %d\n", newBase);
             //callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
             callStack_.emplace(func, 0, newBase, func->proto->numRegisters);

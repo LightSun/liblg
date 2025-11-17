@@ -116,7 +116,6 @@ static inline String opcode2Str(int opcode){
     case SUB:{return "SUB";}
     case MUL:{return "MUL";}
     case DIV:{return "DIV";}
-    case CONCAT:{return "CONCAT";}
 
     case CALL:{return "CALL";}
     case RETURN:{return "RETURN";}

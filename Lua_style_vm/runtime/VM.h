@@ -8,6 +8,7 @@
 #include "runtime/Array.h"
 #include "runtime/Exception.h"
 #include "runtime/utils/ModuleConstantPool.h"
+#include "runtime/utils/VirtualVector.h"
 
 namespace h7l { namespace runtime {
 
@@ -15,16 +16,17 @@ namespace h7l { namespace runtime {
 class VM
 {
 public:
-    VM():VM(std::make_shared<ModuleConstantPool>()){
+    VM(int coreRegSize = 256):VM(coreRegSize, std::make_shared<ModuleConstantPool>()){
     }
-    VM(std::shared_ptr<ModuleConstantPool> pool):
-        const_pool_(pool),pc(0),running(false) {
-        globalRegisters_.resize(50);  //初始寄存器数量
+    VM(int coreRegSize,std::shared_ptr<ModuleConstantPool> pool):
+        globalRegisters_(coreRegSize),const_pool_(pool),pc(0),running(false) {
     }
     ConstantPoolPlan& getDefautConstantPool(){
         return (*const_pool_)[0];
     }
-
+    Value& getTop(CallFrame* frame){
+        return getRegister(frame, 0);
+    }
     Value& getRegister(CallFrame* frame,int index) {
         if (index >= 0 && index < frame->numReg) {
              return globalRegisters_[frame->base + index];
@@ -53,6 +55,7 @@ private:
     }
     // 关闭所有指向指定栈位置之上的upvalue
     void closeUpvaluesAbove(int stackIndex);
+    void closeAndPopFrame(CallFrame& frame);
     std::shared_ptr<Upvalue> findOrCreateUpvalue(int stackIndex);
 
 private:
@@ -66,8 +69,8 @@ private:
     void trackDiff(const Instruction& ins);
 
 private:
+    VirtualVector<Value> globalRegisters_;  // 寄存器数组
     std::shared_ptr<ModuleConstantPool> const_pool_;
-    std::vector<Value> globalRegisters_;  // 寄存器数组
     std::stack<CallFrame> callStack_;  // 调用栈
     int pc;                        // 程序计数器
     bool running;                  // 运行标志

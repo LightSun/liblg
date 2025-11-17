@@ -22,7 +22,8 @@ public:
             this->dstReg = dst;
         }
     };
-    void saveRegisters(std::vector<Value>& vals, int start, int cnt){
+    template<typename Container>
+    void saveRegisters(Container& vals, int start, int cnt){
         m_saveRegisters = {vals.begin() + start, vals.begin() + start + cnt};
         m_curRegisters = &vals[start];
     }

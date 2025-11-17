@@ -9,13 +9,12 @@ namespace h7l { namespace runtime {
 struct CallFrame {
     Closure* closure;
     std::stack<std::shared_ptr<LoopState>> loopStates;
-    int pc {0};
-    int base; // 寄存器基址
+    int pc {0};// current pc of call-frame
+    int base;  // 寄存器基址
     int numReg;
-    //std::vector<Value> registers;
 
-    CallFrame(Closure* cl, int p, int b, int numReg)
-        : closure(cl), pc(p), base(b),numReg(numReg) {
+    CallFrame(Closure* cl, int pc, int base, int numReg)
+        : closure(cl), pc(pc), base(base),numReg(numReg) {
         cl->ref();
     }
     ~CallFrame(){

@@ -8,12 +8,21 @@ namespace h7l { namespace runtime {
 enum OpCode {
     BASE_START,
     LOADK,      // 将常量加载到寄存器
+//    LOADIMM_S8, // load direct number/bool/string
+//    LOADIMM_U8,
+//    LOADIMM_S16,
+//    LOADIMM_U16,
+//    LOADIMM_S32,
+//    LOADIMM_U32,
+//    LOADIMM_S64,
+//    LOADIMM_U64,
     MOVE,       // 在寄存器间移动值
+    //------
     ADD,        // 加法
     SUB,        // 减法
     MUL,        // 乘法
     DIV,        // 除法
-    CONCAT,     // 字符串连接
+    //CONCAT,     // 字符串连接
     EQ,         // 相等比较
     LT,         // 小于比较
     LE,         // 小于等于比较
