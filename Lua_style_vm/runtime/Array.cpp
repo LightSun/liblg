@@ -22,8 +22,10 @@ Array* Array::New(Type eleType, CList<int> shapes){
         alignSize = actDataSize + ptrSize - left;
     }
     Array* array = new Array();
-    auto sd = std::shared_ptr<ShareData>(new ShareData(alignSize), [array](ShareData*){
+    auto sd = std::shared_ptr<ShareData>(new ShareData(alignSize),
+                                         [array](ShareData* sd){
         array->delEleRef();
+        delete sd;
     });
     array->eleType = eleType;
     array->data = sd;
@@ -264,6 +266,7 @@ List<int> Array::notContainsIndexes(Array* arr){
     }
     return vec1;
 }
+
 void Array::sameIndexes(Array* arr, List<int>& v1, List<int>& v2){
     if(pri_is_base_type(eleType)){
         for(int i = 0 ; i < (int)desc->eleCount ; ++i){

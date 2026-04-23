@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "runtime/IObjectType.h"
 #include "runtime/utils/privates.h"
 
@@ -16,6 +17,13 @@ struct Exception: public BaseObjectType<Exception>{
 
     static Exception* make(int opcode, CString msg){
         Exception* ex = new Exception();
+        ex->opcode = opcode;
+        ex->msg = msg;
+        return ex;
+    }
+
+    static std::shared_ptr<Exception> makeShared(int opcode, CString msg){
+        auto ex = std::make_shared<Exception>();
         ex->opcode = opcode;
         ex->msg = msg;
         return ex;

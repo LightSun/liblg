@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 namespace h7l { namespace runtime {
 
@@ -19,7 +20,7 @@ public:
         m_vec.resize(s);
     }
     void sub(size_t delta){
-        int target = std::max(m_vec.size() - delta, 0);
+        int target = std::max((int)(m_vec.size() - delta), 0);
         int capTarget = std::max(target, m_coreSize);
         if(m_vec.capacity() < capTarget){
             m_vec.reserve(capTarget);

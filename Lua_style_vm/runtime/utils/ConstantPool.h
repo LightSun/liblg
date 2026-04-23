@@ -113,11 +113,7 @@ public:
         return addObject0(val);
     }
     size_t addString(CString str){
-        char* sptr = nullptr;
-        {
-            std::unique_lock lock(mutex_);
-            sptr = (char*)string_pool_.intern(str);
-        }
+        char* sptr = addToStringPool(str);
         return addObject0(Value(kType_STRING, new StringRef(sptr, 0, str.length())));
     }
 
@@ -232,8 +228,12 @@ public:
         for(auto& p : obj_plans_){
             p.index = baseSize + pool_.obj_pool_.add(p.val);
         }
+        rt_vals_ = getRuntimeValues0();
         base_plans_.clear();
         obj_plans_.clear();
+    }
+    const std::vector<Value*> getRuntimeValues(){
+        return rt_vals_;
     }
 
     void markInvalid(){
@@ -244,14 +244,31 @@ public:
     }
 
 private:
+    std::vector<Value*> getRuntimeValues0(){
+        std::vector<Value*> vec;
+        for(auto& p : base_plans_){
+            auto& v = pool_.base_pool_.getAt(p.index);
+            vec.push_back(&v);
+        }
+        const auto baseSize = pool_.base_pool_.size();
+        for(auto& p : obj_plans_){
+            auto& v = pool_.obj_pool_.getAt(p.index - baseSize);
+            vec.push_back(&v);
+        }
+        return vec;
+    }
+
+private:
     struct Plan{
         Value val;
         size_t index {(size_t)-1};
         Plan(const Value& val):val(val){}
+        Plan(){}
     };
     ConstantPool pool_;
     List<Plan> base_plans_;
     List<Plan> obj_plans_;
+    std::vector<Value*> rt_vals_;
     bool invalid_ {false};
 };
 

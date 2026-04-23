@@ -30,6 +30,7 @@ struct CallFrame {
         operator=(cf);
     }
     CallFrame& operator=(CallFrame&& cf){
+        this->closure->unref();
         this->closure = cf.closure;
         this->pc = cf.pc;
         this->loopStates = cf.loopStates;
@@ -39,6 +40,7 @@ struct CallFrame {
         return *this;
     }
     CallFrame& operator=(const CallFrame& cf){
+        this->closure->unref();
         this->closure = cf.closure;
         this->pc = cf.pc;
         this->loopStates = cf.loopStates;
@@ -49,9 +51,6 @@ struct CallFrame {
     }
     int getNumRegs()const{
         return numReg;
-    }
-    int getModuleIndex()const{
-        return closure->proto->modIndex;
     }
     Instruction& getInst(int pc){
         return closure->proto->instructions[pc];

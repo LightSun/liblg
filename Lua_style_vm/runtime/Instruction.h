@@ -16,6 +16,7 @@ enum OpCode {
 //    LOADIMM_U32,
 //    LOADIMM_S64,
 //    LOADIMM_U64,
+    STOREK,
     MOVE,       // 在寄存器间移动值
     //------
     ADD,        // 加法

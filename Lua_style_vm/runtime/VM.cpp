@@ -3,7 +3,6 @@
 namespace h7l { namespace runtime {
 
 struct ClosureDeleter{
-
     void operator()(Closure* p)const{
         if(p){
             p->unref();
@@ -12,7 +11,10 @@ struct ClosureDeleter{
 };
 
 void VM::execute(std::shared_ptr<FunctionProto> func){
-    callStack_.emplace(new Closure(func), 0, 0, func->numRegisters);
+    //CallFrame(Closure* cl, int pc, int base, int numReg)
+    //base start from 1. 0 is the return.
+    callStack_.emplace(new Closure(func), 0, 1, func->numRegs);
+    globalRegisters_.add(func->numRegs + 1);
     running = true;
 
     // 主执行循环
@@ -86,32 +88,35 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
 
     switch (instr.opcode) {
     case LOADK: {
-        //dst_reg, src_idx, -
-        auto& pool = const_pool_->at(frame.getModuleIndex());
-        if(pool.isInvalid()){
-            m_excep = sk_sp(Exception::make(instr.opcode, "ConstPool invalid"));
-        }else if (instr.b < (int)pool.size()) {
-            getRegister(instr.a) = pool.getAt(instr.b);
+        //dst_reg, const_idx, -
+        if (instr.b >= 0 && instr.b < (int)closure->proto->consts.size()) {
+            getRegister(instr.a) = *closure->proto->consts[instr.b];
         } else {
             std::stringstream ss;
             ss << "Constant index out of bounds: ";
             ss << "index = " << instr.b << ", ";
-            ss << "size = " << pool.size();
-            m_excep = sk_sp(Exception::make(instr.opcode, ss.str()));
+            ss << "size = " << closure->proto->consts.size();
+            m_excep = Exception::makeShared(instr.opcode, ss.str());
         }
         frame.pc++;
         trackDiff(instr, {}, instr.a);
         break;
-    }
+    }break;
+
+    case STOREK: {
+        //dst_const_idx, src_reg, -
+        *closure->proto->consts[instr.a] = getRegister(instr.b);
+        frame.pc++;
+    }break;
 
     case MOVE: {
         //dst_reg, src_reg, -
         getRegister(instr.a) = getRegister(instr.b);
         frame.pc++;
         trackDiff(instr, instr.b, instr.a);
-        break;
-    }
+    }break;
 
+        //TODO care about type-advance-up ?
     case ADD: {
         //dst_reg, src1_reg, src2_reg
         auto& v1 = getRegister(instr.b);
@@ -119,11 +124,12 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         auto td = m_factory.getTypeDelegate(v1.type);
         if(td != nullptr){
             getRegister(instr.a) = td->add(v1, v2);
+        }else{
+            MED_ASSERT_X(false, "can 't find type = " << v1.type);
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case SUB: {
         //dst_reg, src1_reg, src2_reg
@@ -132,11 +138,12 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         auto td = m_factory.getTypeDelegate(v1.type);
         if(td != nullptr){
             getRegister(instr.a) = td->sub(v1, v2);
+        }else{
+            MED_ASSERT_X(false, "can 't find type = " << v1.type);
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case MUL: {
         //dst_reg, src1_reg, src2_reg
@@ -145,11 +152,12 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         auto td = m_factory.getTypeDelegate(v1.type);
         if(td != nullptr){
             getRegister(instr.a) = td->mul(v1, v2);
+        }else{
+            MED_ASSERT_X(false, "can 't find type = " << v1.type);
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case DIV: {
         //dst_reg, src1_reg, src2_reg
@@ -158,11 +166,12 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         auto td = m_factory.getTypeDelegate(v1.type);
         if(td != nullptr){
             getRegister(instr.a) = td->div(v1, v2);
+        }else{
+            MED_ASSERT_X(false, "can 't find type = " << v1.type);
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 //--------
     case EQ: {
         //dst_reg, src1_reg, src2_reg
@@ -172,8 +181,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         getRegister(instr.a) = Value(v1.equals(v2));
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case LT: {
         //dst_reg, src1_reg, src2_reg
@@ -183,8 +191,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         getRegister(instr.a) = td->lessThan(v1, v2);
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case LE: {
         //dst_reg, src1_reg, src2_reg
@@ -194,8 +201,7 @@ void VM::processBaseInst(CallFrame& frame, const Instruction& instr){
         getRegister(instr.a) = td->lessEquals(v1, v2);
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     }
 }
@@ -290,6 +296,7 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
         // <ret_reg>,-,-
         // -1 is the return reg.
         if(instr.a >= 0){
+            MED_ASSERT_X(frame.base >= 1, "");
             globalRegisters_[frame.base - 1] = getRegister(instr.a);
         }
         //
@@ -299,31 +306,29 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
             caller.pc++; // 继续执行下一条指令
         }
         trackDiff(instr);
-        break;
-    }
+    }break;
 
     case CALL: {
-        //closure, numParam, -
+        //closure_reg_idx(relative), numParam, -
         auto& v1 = getRegister(instr.a);
         auto func = v1.getPtr<Closure>();
         if (func) {
-            globalRegisters_.add(frame.getNumRegs() + 1);
             // create new call-frame. + 1 for return val.
             int newBase = frame.base + frame.getNumRegs() + 1;
             printf(" >> newBase = %d\n", newBase);
             //callStack.push(CallFrame(func, 0, newBase, func->proto->numRegisters));
-            callStack_.emplace(func, 0, newBase, func->proto->numRegisters);
-            // 复制参数.
-            // for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
-            //     globalRegisters_[newBase + i] = getRegister(instr.a + 1 + i);
-            // }
+            callStack_.emplace(func, 0, newBase, func->proto->numRegs);
+            globalRegisters_.add(func->proto->numRegs + 1);
+            //copy params.
+            for (int i = 0; i < func->proto->numParams && i < instr.b; i++) {
+                globalRegisters_[newBase + 1] = getRegister(instr.a + 1 + i);
+            }
         } else {
             std::cerr << "Type error: expected function for call\n";
             frame.pc++;
         }
         trackDiff(instr, instr.b, -1);
-        break;
-    }
+    }break;
 
     case CALL_C: {
         //<cfunc>,<target_val>,-
@@ -337,8 +342,7 @@ void VM::processControlInst(CallFrame& frame, const Instruction& instr){
         }
         frame.pc++;
         trackDiff(instr, instr.a, -1);
-        break;
-    }
+    }break;
 
     case FORI_INIT:{
         //<init>, <end>, -
@@ -429,8 +433,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         getRegister(instr.a) = Value::makeTable(new Table());
         frame.pc++;
         trackDiff(instr, {}, instr.a);
-        break;
-    }
+    }break;
 
     case GETTABLE: {
         //dst,tab,key
@@ -456,8 +459,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case SETTABLE: {
         //tab,k,v
@@ -475,8 +477,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
-        break;
-    }
+    }break;
 
     case NEWARRAY:{
         //dst, <type>, tab-as-array-shape,
@@ -499,6 +500,8 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
                     //TODO shape is not fixed. must not reach here. should throw.
                 }
             }
+        }else{
+            MED_ASSERT_X(false, "must tab-as-array-shape");
         }
         frame.pc++;
         trackDiff(instr, {instr.b, instr.c}, instr.a);
@@ -563,8 +566,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         }
         frame.pc++;
         trackDiff(instr, {}, instr.a);
-        break;
-    }
+    }break;
 
     case GETUPVAL: {
         //dst, upindex, -
@@ -576,8 +578,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         //
         frame.pc++;
         trackDiff(instr, {}, instr.a);
-        break;
-    }
+    }break;
 
     case SETUPVAL: {
         //dst-upval, upindex, -
@@ -589,8 +590,7 @@ void VM::processObjectInst(CallFrame& frame, const Instruction& instr){
         //
         frame.pc++;
         trackDiff(instr, instr.a, -1);
-        break;
-    }
+    }break;
     }
 }
 void VM::processOtherInst(CallFrame& frame, const Instruction& instr){

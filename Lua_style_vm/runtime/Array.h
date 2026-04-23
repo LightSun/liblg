@@ -281,6 +281,7 @@ public:
 
     //only support dim = 1
     //before call this, should call isElementComparable() first.
+    // v1: cur idxes, v2: other idxes
     void sameIndexes(Array* arr, List<int>& v1, List<int>& v2);
 
     //only support dim = 1
@@ -403,7 +404,9 @@ private:
         return true;
     }
     void delEleRef(){
-        if(eleType != kType_VOID && !pri_is_base_type(eleType) && isDataValid()){
+        if(eleType != kType_VOID
+            && !pri_is_base_type(eleType)
+            && isDataValid()){
             auto ptr = (IObjectType**)getDataPtr();
             for(size_t i = 0 ; i < desc->eleCount ; ++i){
                 if(ptr[i] != nullptr){
